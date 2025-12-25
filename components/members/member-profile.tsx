@@ -424,7 +424,7 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete Document</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete "{doc.title}"? This action cannot be undone.
+                                Are you sure you want to delete &ldquo;{doc.title}&rdquo;? This action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -491,7 +491,7 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Delete Audio Clip</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete "{clip.title}"? This action cannot be undone.
+                                  Are you sure you want to delete &ldquo;{clip.title}&rdquo;? This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>

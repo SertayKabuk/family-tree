@@ -34,7 +34,7 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  const sharedTrees = memberTrees.map((m) => ({
+  const sharedTrees = memberTrees.map((m: typeof memberTrees[number]) => ({
     ...m.tree,
     role: m.role,
   }));

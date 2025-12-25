@@ -39,7 +39,7 @@ A modern family tree application with interactive graph visualization, built wit
 
 2. **Install dependencies**
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. **Set up environment variables**
@@ -59,12 +59,12 @@ A modern family tree application with interactive graph visualization, built wit
 
 5. **Run database migrations**
    ```bash
-   npx prisma migrate dev
+   pnpm prisma migrate dev
    ```
 
 6. **Start the development server**
    ```bash
-   npm run dev
+   pnpm dev
    ```
 
 7. **Open the app**
@@ -106,10 +106,10 @@ prisma/                   # Database schema and migrations
 ## Scripts
 
 ```bash
-npm run dev       # Start development server
-npm run build     # Build for production
-npm run start     # Start production server
-npm run lint      # Run ESLint
+pnpm dev       # Start development server
+pnpm build     # Build for production
+pnpm start     # Start production server
+pnpm lint      # Run ESLint
 ```
 
 ## Adding UI Components
@@ -117,7 +117,7 @@ npm run lint      # Run ESLint
 This project uses shadcn/ui with the base-vega style:
 
 ```bash
-npx shadcn@latest add <component-name>
+pnpm dlx shadcn@latest add <component-name>
 ```
 
 ## License

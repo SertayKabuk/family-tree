@@ -17,21 +17,22 @@ services:
       timeout: 5s
       retries: 5
 
-  # Production app service (uncomment when ready)
-  # app:
-  #   build: .
-  #   container_name: familytree-app
-  #   restart: unless-stopped
-  #   environment:
-  #     DATABASE_URL: postgresql://postgres:postgres@db:5432/familytree
-  #     AUTH_TRUST_HOST: "true"
-  #   volumes:
-  #     - ./uploads:/app/uploads
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
+  app:
+    build: .
+    container_name: familytree-app
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/familytree
+      AUTH_TRUST_HOST: "true"
+    volumes:
+      - ./uploads:/app/uploads
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:

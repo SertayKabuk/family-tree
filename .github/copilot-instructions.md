@@ -75,8 +75,8 @@ try {
 ### Setup
 ```bash
 docker compose up -d          # Start PostgreSQL
-npx prisma migrate dev        # Run migrations
-npm run dev                   # Start dev server
+pnpm prisma migrate dev       # Run migrations
+pnpm dev                      # Start dev server
 ```
 
 ### Environment Variables Required
@@ -89,7 +89,7 @@ AUTH_SECRET=<random-secret>
 
 ### Adding UI Components
 ```bash
-npx shadcn@latest add <component-name>  # Uses base-vega style from components.json
+pnpm dlx shadcn@latest add <component-name>  # Uses base-vega style from components.json
 ```
 
 ## Important Notes
