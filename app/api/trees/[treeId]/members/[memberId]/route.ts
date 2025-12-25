@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/permissions";
+import { deleteFile } from "@/lib/storage";
 import { z } from "zod";
 import { Gender } from "@prisma/client";
 
@@ -117,7 +118,13 @@ export async function PATCH(
     if (data.birthPlace !== undefined) updateData.birthPlace = data.birthPlace;
     if (data.deathPlace !== undefined) updateData.deathPlace = data.deathPlace;
     if (data.occupation !== undefined) updateData.occupation = data.occupation;
-    if (data.profilePicturePath !== undefined) updateData.profilePicturePath = data.profilePicturePath;
+    if (data.profilePicturePath !== undefined) {
+      // Delete old profile photo if it exists and we're changing it
+      if (existing.profilePicturePath && data.profilePicturePath !== existing.profilePicturePath) {
+        await deleteFile(existing.profilePicturePath);
+      }
+      updateData.profilePicturePath = data.profilePicturePath;
+    }
     if (data.positionX !== undefined) updateData.positionX = data.positionX;
     if (data.positionY !== undefined) updateData.positionY = data.positionY;
 

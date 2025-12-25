@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,6 +20,8 @@ import {
   Edit,
   Upload,
   Plus,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import {
   FamilyMember,
@@ -36,6 +38,18 @@ import { MediaUploadDialog } from "@/components/members/media-upload-dialog";
 import { AddFactDialog } from "@/components/members/add-fact-dialog";
 import { EditMemberDialog } from "@/components/members/edit-member-dialog";
 import { ProfilePhotoUpload } from "@/components/members/profile-photo-upload";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface MemberProfileProps {
   member: FamilyMember & {
@@ -57,6 +71,7 @@ interface MemberProfileProps {
 }
 
 export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfileProps) {
+  const router = useRouter();
   const colors = GENDER_COLORS[member.gender];
   const initials = `${member.firstName[0]}${member.lastName?.[0] || ""}`.toUpperCase();
   const fullName = `${member.firstName}${member.lastName ? ` ${member.lastName}` : ""}`;
@@ -65,6 +80,29 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
   const [addFactOpen, setAddFactOpen] = useState(false);
   const [editMemberOpen, setEditMemberOpen] = useState(false);
   const [profilePhotoOpen, setProfilePhotoOpen] = useState(false);
+  const [deletingMedia, setDeletingMedia] = useState<string | null>(null);
+
+  const deleteMedia = async (type: "photo" | "document" | "audio", id: string) => {
+    setDeletingMedia(id);
+    try {
+      const response = await fetch(`/api/trees/${treeId}/members/${member.id}/media`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, id }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete");
+      }
+
+      toast.success("Deleted successfully");
+      router.refresh();
+    } catch {
+      toast.error("Failed to delete");
+    } finally {
+      setDeletingMedia(null);
+    }
+  };
 
   const formatDate = (date: Date | null) => {
     if (!date) return null;
@@ -274,13 +312,51 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {member.photos.map((photo) => (
-                    <div key={photo.id} className="aspect-square rounded-lg overflow-hidden bg-muted relative">
-                      <Image
+                    <div key={photo.id} className="aspect-square rounded-lg overflow-hidden bg-muted relative group">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
                         src={`/api/files/${photo.filePath}`}
                         alt={photo.title || "Photo"}
-                        fill
-                        className="object-cover"
+                        className="absolute inset-0 w-full h-full object-cover"
                       />
+                      {canEdit && (
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <AlertDialog>
+                            <AlertDialogTrigger
+                              render={
+                                <Button
+                                  size="icon"
+                                  variant="destructive"
+                                  disabled={deletingMedia === photo.id}
+                                />
+                              }
+                            >
+                              {deletingMedia === photo.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Photo</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this photo? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteMedia("photo", photo.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -308,21 +384,62 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
               ) : (
                 <div className="space-y-2">
                   {member.documents.map((doc) => (
-                    <a
+                    <div
                       key={doc.id}
-                      href={`/api/files/${doc.filePath}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted transition-colors"
                     >
-                      <FileText className="h-8 w-8 text-muted-foreground" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{doc.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {(doc.fileSize / 1024).toFixed(1)} KB
-                        </p>
-                      </div>
-                    </a>
+                      <a
+                        href={`/api/files/${doc.filePath}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 flex-1 min-w-0"
+                      >
+                        <FileText className="h-8 w-8 text-muted-foreground shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{doc.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(doc.fileSize / 1024).toFixed(1)} KB
+                          </p>
+                        </div>
+                      </a>
+                      {canEdit && (
+                        <AlertDialog>
+                          <AlertDialogTrigger
+                            render={
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive shrink-0"
+                                disabled={deletingMedia === doc.id}
+                              />
+                            }
+                          >
+                            {deletingMedia === doc.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Document</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{doc.title}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteMedia("document", doc.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
@@ -350,7 +467,46 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
                 <div className="space-y-4">
                   {member.audioClips.map((clip) => (
                     <div key={clip.id} className="p-4 rounded-lg border">
-                      <p className="font-medium mb-2">{clip.title}</p>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <p className="font-medium">{clip.title}</p>
+                        {canEdit && (
+                          <AlertDialog>
+                            <AlertDialogTrigger
+                              render={
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="text-destructive hover:text-destructive shrink-0 h-8 w-8"
+                                  disabled={deletingMedia === clip.id}
+                                />
+                              }
+                            >
+                              {deletingMedia === clip.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Audio Clip</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{clip.title}"? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteMedia("audio", clip.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                       <audio controls className="w-full">
                         <source src={`/api/files/${clip.filePath}`} />
                         Your browser does not support audio playback.

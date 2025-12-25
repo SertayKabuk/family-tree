@@ -98,3 +98,37 @@ npx shadcn@latest add <component-name>  # Uses base-vega style from components.j
 - **Prisma**: Uses pg adapter with connection pooling; client is singleton in [lib/prisma.ts](lib/prisma.ts)
 - **Dates**: Stored as `DateTime` in Prisma, serialized as ISO strings in API responses
 - **Imports**: Use `@/` path alias for all imports from project root
+
+### Base UI Components (NOT Radix)
+This project uses **@base-ui/react** components (base-vega style), NOT Radix UI. Key difference:
+
+- ❌ **Do NOT use `asChild` prop** - this is a Radix pattern that doesn't exist in base-ui
+- ✅ **Use `render` prop instead** to customize the rendered element
+
+```typescript
+// ❌ WRONG - Radix pattern (will cause TypeScript errors)
+<AlertDialogTrigger asChild>
+  <Button variant="destructive">Delete</Button>
+</AlertDialogTrigger>
+
+// ✅ CORRECT - Base UI pattern
+<AlertDialogTrigger render={<Button variant="destructive" />}>
+  Delete
+</AlertDialogTrigger>
+
+// ✅ CORRECT - With dynamic props
+<AlertDialogTrigger
+  render={
+    <Button
+      variant="outline"
+      className="w-full"
+      disabled={loading}
+    />
+  }
+>
+  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+  Delete Item
+</AlertDialogTrigger>
+```
+
+This applies to: `AlertDialogTrigger`, `DialogTrigger`, `DropdownMenuTrigger`, `TooltipTrigger`, etc.
