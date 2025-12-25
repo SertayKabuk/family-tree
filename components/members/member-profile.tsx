@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,7 +12,6 @@ import { Separator } from "@/components/ui/separator";
 import {
   ChevronLeft,
   Calendar,
-  MapPin,
   Briefcase,
   Camera,
   FileText,
@@ -30,13 +29,13 @@ import {
   Fact,
   Relationship,
   Gender,
-  RelationshipType,
 } from "@prisma/client";
 import { GENDER_COLORS } from "@/lib/tree-colors";
 import { getRelationshipLabel } from "@/lib/tree-colors";
 import { MediaUploadDialog } from "@/components/members/media-upload-dialog";
 import { AddFactDialog } from "@/components/members/add-fact-dialog";
 import { EditMemberDialog } from "@/components/members/edit-member-dialog";
+import { ProfilePhotoUpload } from "@/components/members/profile-photo-upload";
 
 interface MemberProfileProps {
   member: FamilyMember & {
@@ -58,7 +57,6 @@ interface MemberProfileProps {
 }
 
 export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfileProps) {
-  const router = useRouter();
   const colors = GENDER_COLORS[member.gender];
   const initials = `${member.firstName[0]}${member.lastName?.[0] || ""}`.toUpperCase();
   const fullName = `${member.firstName}${member.lastName ? ` ${member.lastName}` : ""}`;
@@ -66,6 +64,7 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
   const [uploadType, setUploadType] = useState<"photos" | "documents" | "audio" | null>(null);
   const [addFactOpen, setAddFactOpen] = useState(false);
   const [editMemberOpen, setEditMemberOpen] = useState(false);
+  const [profilePhotoOpen, setProfilePhotoOpen] = useState(false);
 
   const formatDate = (date: Date | null) => {
     if (!date) return null;
@@ -115,30 +114,41 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
       <Card className="mb-6">
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-6">
-            <Avatar
-              className="h-24 w-24 border-4 mx-auto sm:mx-0"
-              style={{ borderColor: colors.border }}
-            >
-              {member.profilePicturePath ? (
-                <AvatarImage
-                  src={`/api/files/${member.profilePicturePath}`}
-                  alt={fullName}
-                />
-              ) : null}
-              <AvatarFallback
-                className="text-2xl font-bold"
-                style={{ backgroundColor: colors.border, color: "white" }}
+            <div className="relative group mx-auto sm:mx-0">
+              <Avatar
+                className={`h-24 w-24 border-4 ${canEdit ? 'cursor-pointer' : ''}`}
+                style={{ borderColor: colors.border }}
+                onClick={() => canEdit && setProfilePhotoOpen(true)}
               >
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+                {member.profilePicturePath ? (
+                  <AvatarImage
+                    src={`/api/files/${member.profilePicturePath}`}
+                    alt={fullName}
+                  />
+                ) : null}
+                <AvatarFallback
+                  className="text-2xl font-bold"
+                  style={{ backgroundColor: colors.border, color: "white" }}
+                >
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              {canEdit && (
+                <div
+                  className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  onClick={() => setProfilePhotoOpen(true)}
+                >
+                  <Camera className="h-6 w-6 text-white" />
+                </div>
+              )}
+            </div>
 
             <div className="flex-1 text-center sm:text-left">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
                   <h1 className="text-2xl font-bold">{fullName}</h1>
                   {member.nickname && (
-                    <p className="text-muted-foreground">"{member.nickname}"</p>
+                    <p className="text-muted-foreground">&ldquo;{member.nickname}&rdquo;</p>
                   )}
                   <Badge
                     variant="secondary"
@@ -264,11 +274,12 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {member.photos.map((photo) => (
-                    <div key={photo.id} className="aspect-square rounded-lg overflow-hidden bg-muted">
-                      <img
+                    <div key={photo.id} className="aspect-square rounded-lg overflow-hidden bg-muted relative">
+                      <Image
                         src={`/api/files/${photo.filePath}`}
                         alt={photo.title || "Photo"}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
                       />
                     </div>
                   ))}
@@ -416,6 +427,16 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
         treeId={treeId}
         open={editMemberOpen}
         onOpenChange={setEditMemberOpen}
+      />
+
+      <ProfilePhotoUpload
+        treeId={treeId}
+        memberId={member.id}
+        memberName={fullName}
+        currentPhotoPath={member.profilePicturePath}
+        gender={member.gender}
+        open={profilePhotoOpen}
+        onOpenChange={setProfilePhotoOpen}
       />
     </div>
   );

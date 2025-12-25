@@ -45,6 +45,7 @@ interface ShareSectionProps {
 
 export function ShareSection({
   treeId,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   treeName,
   memberships,
   invitations,

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { TreePine, Users, Share2, Image, FileText, Mic } from "lucide-react";
+import { TreePine, Users, Share2, Image as ImageIcon, FileText, Mic } from "lucide-react";
 
 export default async function HomePage() {
   const session = await auth();
@@ -104,7 +104,7 @@ export default async function HomePage() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="p-2 rounded-lg bg-primary/10">
-                  <Image className="h-6 w-6 text-primary" />
+                  <ImageIcon className="h-6 w-6 text-primary" />
                 </div>
                 <div>
                   <h3 className="font-semibold">Photo Gallery</h3>

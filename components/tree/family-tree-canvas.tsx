@@ -8,7 +8,6 @@ import {
   MiniMap,
   useNodesState,
   useEdgesState,
-  addEdge,
   Connection,
   Node,
   Edge,
@@ -20,14 +19,14 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import { FamilyMember, Relationship, Gender, RelationshipType } from "@prisma/client";
+import { FamilyMember, Relationship } from "@prisma/client";
 import { FamilyMemberNode, FamilyMemberNodeData } from "@/components/nodes/family-member-node";
 import { RelationshipEdge, RelationshipEdgeData } from "@/components/edges/relationship-edge";
 import { TreeToolbar } from "@/components/tree/tree-toolbar";
 import { MemberDetailSheet } from "@/components/tree/member-detail-sheet";
 import { AddMemberDialog } from "@/components/tree/add-member-dialog";
 import { AddRelationshipDialog } from "@/components/tree/add-relationship-dialog";
-import { getLayoutedElements, getGridLayout } from "@/lib/tree-layout";
+import { getLayoutedElements } from "@/lib/tree-layout";
 import { GENDER_COLORS } from "@/lib/tree-colors";
 import { toast } from "sonner";
 

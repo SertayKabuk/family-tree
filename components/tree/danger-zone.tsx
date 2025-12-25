@@ -89,7 +89,7 @@ export function DangerZone({ treeId, treeName }: DangerZoneProps) {
                 <AlertDialogDescription className="space-y-4">
                   <p>
                     This action cannot be undone. This will permanently delete the
-                    family tree <strong>"{treeName}"</strong> and all associated
+                    family tree <strong>&ldquo;{treeName}&rdquo;</strong> and all associated
                     data including:
                   </p>
                   <ul className="list-disc list-inside text-sm space-y-1">

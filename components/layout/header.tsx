@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { TreePine, LogOut, Settings, User } from "lucide-react";
+import { TreePine, LogOut, Settings } from "lucide-react";
 
 interface HeaderProps {
   user: {

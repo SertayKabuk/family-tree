@@ -18,55 +18,57 @@ export default async function TreeSettingsPage({ params }: SettingsPageProps) {
     redirect("/login");
   }
 
+  let role;
   try {
-    const { role } = await requirePermission(treeId, "edit");
-
-    const tree = await prisma.familyTree.findUnique({
-      where: { id: treeId },
-      include: {
-        owner: { select: { id: true, name: true, email: true } },
-        memberships: {
-          include: {
-            user: { select: { id: true, name: true, email: true, image: true } },
-          },
-          orderBy: { createdAt: "asc" },
-        },
-        invitations: {
-          where: { usedAt: null },
-          orderBy: { createdAt: "desc" },
-        },
-      },
-    });
-
-    if (!tree) {
-      notFound();
-    }
-
-    const isOwner = role === "OWNER";
-
-    return (
-      <div className="container max-w-3xl py-8 space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold">Tree Settings</h1>
-          <p className="text-muted-foreground">
-            Manage settings for "{tree.name}"
-          </p>
-        </div>
-
-        <TreeSettingsForm tree={tree} />
-
-        <ShareSection
-          treeId={treeId}
-          treeName={tree.name}
-          memberships={tree.memberships}
-          invitations={tree.invitations}
-          isOwner={isOwner}
-        />
-
-        {isOwner && <DangerZone treeId={treeId} treeName={tree.name} />}
-      </div>
-    );
+    const result = await requirePermission(treeId, "edit");
+    role = result.role;
   } catch {
     notFound();
   }
+
+  const tree = await prisma.familyTree.findUnique({
+    where: { id: treeId },
+    include: {
+      owner: { select: { id: true, name: true, email: true } },
+      memberships: {
+        include: {
+          user: { select: { id: true, name: true, email: true, image: true } },
+        },
+        orderBy: { createdAt: "asc" },
+      },
+      invitations: {
+        where: { usedAt: null },
+        orderBy: { createdAt: "desc" },
+      },
+    },
+  });
+
+  if (!tree) {
+    notFound();
+  }
+
+  const isOwner = role === "OWNER";
+
+  return (
+    <div className="container max-w-3xl py-8 space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold">Tree Settings</h1>
+        <p className="text-muted-foreground">
+          Manage settings for &ldquo;{tree.name}&rdquo;
+        </p>
+      </div>
+
+      <TreeSettingsForm tree={tree} />
+
+      <ShareSection
+        treeId={treeId}
+        treeName={tree.name}
+        memberships={tree.memberships}
+        invitations={tree.invitations}
+        isOwner={isOwner}
+      />
+
+      {isOwner && <DangerZone treeId={treeId} treeName={tree.name} />}
+    </div>
+  );
 }

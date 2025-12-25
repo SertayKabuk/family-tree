@@ -27,14 +27,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Calendar,
-  MapPin,
   Briefcase,
-  User,
   ExternalLink,
   Trash2,
   Loader2,
+  Camera,
 } from "lucide-react";
-import { FamilyMember, Gender } from "@prisma/client";
+import { ProfilePhotoUpload } from "@/components/members/profile-photo-upload";
+import { FamilyMember } from "@prisma/client";
 import { GENDER_COLORS } from "@/lib/tree-colors";
 import { toast } from "sonner";
 
@@ -55,6 +55,7 @@ export function MemberDetailSheet({
 }: MemberDetailSheetProps) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
+  const [profilePhotoOpen, setProfilePhotoOpen] = useState(false);
 
   if (!member) return null;
 
@@ -107,28 +108,39 @@ export function MemberDetailSheet({
       <SheetContent className="sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <div className="flex items-start gap-4">
-            <Avatar
-              className="h-16 w-16 border-2"
-              style={{ borderColor: colors.border }}
-            >
-              {member.profilePicturePath ? (
-                <AvatarImage
-                  src={`/api/files/${member.profilePicturePath}`}
-                  alt={displayName}
-                />
-              ) : null}
-              <AvatarFallback
-                className="text-xl font-semibold"
-                style={{ backgroundColor: colors.border, color: "white" }}
+            <div className="relative group">
+              <Avatar
+                className={`h-16 w-16 border-2 ${canEdit ? 'cursor-pointer' : ''}`}
+                style={{ borderColor: colors.border }}
+                onClick={() => canEdit && setProfilePhotoOpen(true)}
               >
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+                {member.profilePicturePath ? (
+                  <AvatarImage
+                    src={`/api/files/${member.profilePicturePath}`}
+                    alt={displayName}
+                  />
+                ) : null}
+                <AvatarFallback
+                  className="text-xl font-semibold"
+                  style={{ backgroundColor: colors.border, color: "white" }}
+                >
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              {canEdit && (
+                <div
+                  className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  onClick={() => setProfilePhotoOpen(true)}
+                >
+                  <Camera className="h-5 w-5 text-white" />
+                </div>
+              )}
+            </div>
             <div className="flex-1">
               <SheetTitle className="text-left">{fullName}</SheetTitle>
               {member.nickname && (
                 <SheetDescription className="text-left">
-                  "{member.nickname}"
+                  &ldquo;{member.nickname}&rdquo;
                 </SheetDescription>
               )}
               <Badge
@@ -240,6 +252,16 @@ export function MemberDetailSheet({
             )}
           </div>
         </div>
+
+        <ProfilePhotoUpload
+          treeId={treeId}
+          memberId={member.id}
+          memberName={fullName}
+          currentPhotoPath={member.profilePicturePath}
+          gender={member.gender}
+          open={profilePhotoOpen}
+          onOpenChange={setProfilePhotoOpen}
+        />
       </SheetContent>
     </Sheet>
   );

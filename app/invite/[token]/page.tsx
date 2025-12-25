@@ -100,7 +100,7 @@ export default function InvitePage() {
           <CardTitle className="text-2xl">Family Tree Invitation</CardTitle>
           {inv && (
             <CardDescription>
-              You've been invited to join "{inv.treeName}"
+              You&apos;ve been invited to join &ldquo;{inv.treeName}&rdquo;
             </CardDescription>
           )}
         </CardHeader>
