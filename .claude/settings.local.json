@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(npm install:*)",
+      "Bash(npx prisma init)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(dir:*)",
+      "Bash(cat:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npx shadcn@latest add dialog sheet tabs avatar tooltip skeleton toast switch -y)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm ls:*)"
+    ]
+  }
+}

@@ -1,0 +1,320 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==================== AUTHENTICATION (Auth.js) ====================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+
+  // Family Tree Relations
+  ownedTrees  FamilyTree[]     @relation("TreeOwner")
+  memberships TreeMembership[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// ==================== FAMILY TREE ====================
+
+model FamilyTree {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  // Ownership
+  ownerId String
+  owner   User   @relation("TreeOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // Privacy
+  isPublic Boolean @default(false)
+
+  // Members and Invitations
+  memberships TreeMembership[]
+  invitations TreeInvitation[]
+
+  // Family Members (nodes in the tree)
+  familyMembers FamilyMember[]
+
+  // Relationships between family members
+  relationships Relationship[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model TreeMembership {
+  id String @id @default(cuid())
+
+  treeId String
+  tree   FamilyTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role MemberRole @default(VIEWER)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([treeId, userId])
+  @@index([userId])
+}
+
+enum MemberRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+model TreeInvitation {
+  id String @id @default(cuid())
+
+  treeId String
+  tree   FamilyTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+
+  token String @unique @default(cuid())
+  email String?
+
+  role MemberRole @default(VIEWER)
+
+  expiresAt DateTime
+  usedAt    DateTime?
+  usedById  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([treeId])
+}
+
+// ==================== FAMILY MEMBERS ====================
+
+model FamilyMember {
+  id String @id @default(cuid())
+
+  treeId String
+  tree   FamilyTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+
+  // Basic Info
+  firstName String
+  lastName  String?
+  nickname  String?
+  gender    Gender
+
+  // Dates
+  birthDate DateTime?
+  deathDate DateTime?
+
+  // Bio and Details
+  bio        String? @db.Text
+  birthPlace String?
+  deathPlace String?
+  occupation String?
+
+  // Profile Picture (local path)
+  profilePicturePath String?
+
+  // Position in visualization (for layout persistence)
+  positionX Float?
+  positionY Float?
+
+  // Relationships
+  relationshipsFrom Relationship[] @relation("RelationshipFrom")
+  relationshipsTo   Relationship[] @relation("RelationshipTo")
+
+  // Media attachments
+  documents  Document[]
+  photos     Photo[]
+  audioClips AudioClip[]
+  facts      Fact[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([treeId])
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNKNOWN
+}
+
+// ==================== RELATIONSHIPS ====================
+
+model Relationship {
+  id String @id @default(cuid())
+
+  treeId String
+  tree   FamilyTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+
+  // From member -> To member
+  fromMemberId String
+  fromMember   FamilyMember @relation("RelationshipFrom", fields: [fromMemberId], references: [id], onDelete: Cascade)
+
+  toMemberId String
+  toMember   FamilyMember @relation("RelationshipTo", fields: [toMemberId], references: [id], onDelete: Cascade)
+
+  type RelationshipType
+
+  // For marriages/partnerships
+  marriageDate DateTime?
+  divorceDate  DateTime?
+
+  // Custom color override for visualization
+  customColor String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([fromMemberId, toMemberId, type])
+  @@index([treeId])
+  @@index([fromMemberId])
+  @@index([toMemberId])
+}
+
+enum RelationshipType {
+  // Parent-Child (directed: parent -> child)
+  PARENT_CHILD
+
+  // Spouse/Partner
+  SPOUSE
+  PARTNER
+  EX_SPOUSE
+
+  // Siblings
+  SIBLING
+  HALF_SIBLING
+  STEP_SIBLING
+
+  // Extended
+  ADOPTIVE_PARENT
+  FOSTER_PARENT
+  GODPARENT
+}
+
+// ==================== MEDIA & CONTENT ====================
+
+model Document {
+  id String @id @default(cuid())
+
+  memberId String
+  member   FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  filePath    String // Local file path
+  fileType    String // MIME type
+  fileSize    Int // bytes
+
+  uploadedAt DateTime @default(now())
+
+  @@index([memberId])
+}
+
+model Photo {
+  id String @id @default(cuid())
+
+  memberId String
+  member   FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  title         String?
+  description   String?
+  filePath      String // Local file path
+  thumbnailPath String?
+
+  takenAt  DateTime?
+  location String?
+
+  uploadedAt DateTime @default(now())
+
+  @@index([memberId])
+}
+
+model AudioClip {
+  id String @id @default(cuid())
+
+  memberId String
+  member   FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  filePath    String // Local file path
+  duration    Int? // seconds
+
+  recordedAt DateTime?
+
+  uploadedAt DateTime @default(now())
+
+  @@index([memberId])
+}
+
+model Fact {
+  id String @id @default(cuid())
+
+  memberId String
+  member   FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  title   String
+  content String  @db.Text
+  date    DateTime?
+  source  String? // Where did this info come from
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([memberId])
+}
