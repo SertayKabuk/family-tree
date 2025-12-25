@@ -1,36 +1,125 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Family Tree
+
+A modern family tree application with interactive graph visualization, built with Next.js 16 and React Flow.
+
+## Features
+
+- 🌳 **Interactive Family Trees** - Create and visualize family relationships with drag-and-drop nodes
+- 👥 **Family Member Profiles** - Store detailed information including photos, documents, audio clips, and facts
+- 🔗 **Relationship Mapping** - Define various relationship types (parent-child, spouse, siblings, etc.)
+- 👤 **Google OAuth Authentication** - Secure sign-in with NextAuth v5
+- 🤝 **Collaboration** - Invite others to view or edit your family trees with role-based permissions
+- 📱 **Responsive Design** - Works on desktop and mobile devices
+
+## Tech Stack
+
+- **Framework**: [Next.js 16](https://nextjs.org) (App Router)
+- **Authentication**: [NextAuth v5](https://authjs.dev) (Auth.js) with Google OAuth
+- **Database**: PostgreSQL with [Prisma ORM](https://prisma.io)
+- **Visualization**: [React Flow](https://reactflow.dev) with [ELK.js](https://github.com/kieler/elkjs) auto-layout
+- **UI Components**: [shadcn/ui](https://ui.shadcn.com) (base-ui) + [Tailwind CSS v4](https://tailwindcss.com)
+- **Icons**: [Lucide React](https://lucide.dev)
+- **Validation**: [Zod](https://zod.dev)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Node.js 18+
+- Docker (for PostgreSQL)
+- Google OAuth credentials
+
+### Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd family-tree
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   
+   Create a `.env` file in the root directory:
+   ```env
+   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/familytree
+   AUTH_GOOGLE_ID=<your-google-client-id>
+   AUTH_GOOGLE_SECRET=<your-google-client-secret>
+   AUTH_SECRET=<random-secret-string>
+   ```
+
+4. **Start the database**
+   ```bash
+   docker compose up -d
+   ```
+
+5. **Run database migrations**
+   ```bash
+   npx prisma migrate dev
+   ```
+
+6. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+7. **Open the app**
+   
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+## Project Structure
+
+```
+app/
+├── (protected)/          # Authenticated routes
+│   ├── dashboard/        # User dashboard
+│   └── trees/[treeId]/   # Family tree views
+├── api/                  # API routes
+│   └── trees/            # Tree CRUD operations
+├── login/                # Authentication page
+└── invite/               # Invitation handling
+
+components/
+├── ui/                   # shadcn/ui primitives
+├── nodes/                # React Flow node components
+├── edges/                # React Flow edge components
+├── tree/                 # Tree-specific features
+├── members/              # Family member components
+├── dashboard/            # Dashboard components
+└── layout/               # App shell components
+
+lib/                      # Utilities and helpers
+prisma/                   # Database schema and migrations
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Data Models
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **FamilyTree** - A collection of family members and their relationships
+- **FamilyMember** - Individual person with profile info, dates, and media
+- **Relationship** - Directional connections between members (parent-child, spouse, sibling, etc.)
+- **TreeMembership** - Role-based access control (Owner, Editor, Viewer)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+```bash
+npm run dev       # Start development server
+npm run build     # Build for production
+npm run start     # Start production server
+npm run lint      # Run ESLint
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Adding UI Components
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+This project uses shadcn/ui with the base-vega style:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npx shadcn@latest add <component-name>
+```
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
