@@ -38,6 +38,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
 # Install wget for healthcheck
 RUN apk add --no-cache wget
@@ -46,13 +48,18 @@ RUN apk add --no-cache wget
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Setup pnpm global bin and install prisma CLI for runtime migrations
+# Install as root but give nextjs user ownership so prisma can write to engines
+RUN mkdir -p $PNPM_HOME && pnpm add -g prisma && chown -R nextjs:nodejs $PNPM_HOME
+
 # Copy necessary files
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Copy prisma schema for migrations
+# Copy prisma schema and config for migrations
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 # Copy startup script
 COPY scripts/start.sh ./start.sh
