@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,13 +27,14 @@ interface DangerZoneProps {
 
 export function DangerZone({ treeId, treeName }: DangerZoneProps) {
   const router = useRouter();
+  const t = useTranslations();
   const [deleting, setDeleting] = useState(false);
   const [confirmName, setConfirmName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleDelete = async () => {
     if (confirmName !== treeName) {
-      toast.error("Please type the tree name correctly to confirm");
+      toast.error(t("dangerZone.errors.confirmMismatch"));
       return;
     }
 
@@ -47,10 +49,10 @@ export function DangerZone({ treeId, treeName }: DangerZoneProps) {
         throw new Error("Failed to delete tree");
       }
 
-      toast.success("Family tree deleted");
+      toast.success(t("dangerZone.success"));
       router.push("/dashboard");
     } catch {
-      toast.error("Failed to delete family tree");
+      toast.error(t("dangerZone.errors.failed"));
       setDeleting(false);
     }
   };
@@ -60,18 +62,18 @@ export function DangerZone({ treeId, treeName }: DangerZoneProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-destructive">
           <AlertTriangle className="h-5 w-5" />
-          Danger Zone
+          {t("dangerZone.title")}
         </CardTitle>
         <CardDescription>
-          Irreversible actions that permanently affect your family tree
+          {t("dangerZone.description")}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between p-4 rounded-lg border border-destructive/30 bg-destructive/5">
           <div>
-            <p className="font-medium">Delete this family tree</p>
+            <p className="font-medium">{t("dangerZone.deleteTree")}</p>
             <p className="text-sm text-muted-foreground">
-              Permanently delete all members, photos, documents, and data
+              {t("dangerZone.deleteTreeDescription")}
             </p>
           </div>
 
@@ -81,25 +83,23 @@ export function DangerZone({ treeId, treeName }: DangerZoneProps) {
           }}>
             <AlertDialogTrigger render={<Button variant="destructive" />}>
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete Tree
+              {t("dangerZone.deleteButton")}
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete Family Tree</AlertDialogTitle>
+                <AlertDialogTitle>{t("dangerZone.deleteDialogTitle")}</AlertDialogTitle>
                 <AlertDialogDescription className="space-y-4">
                   <p>
-                    This action cannot be undone. This will permanently delete the
-                    family tree <strong>&ldquo;{treeName}&rdquo;</strong> and all associated
-                    data including:
+                    {t("dangerZone.deleteDialogDescription", { name: treeName })}
                   </p>
                   <ul className="list-disc list-inside text-sm space-y-1">
-                    <li>All family members and their profiles</li>
-                    <li>All photos, documents, and audio files</li>
-                    <li>All relationships and facts</li>
-                    <li>All sharing settings and invitations</li>
+                    <li>{t("dangerZone.deleteList.members")}</li>
+                    <li>{t("dangerZone.deleteList.media")}</li>
+                    <li>{t("dangerZone.deleteList.relationships")}</li>
+                    <li>{t("dangerZone.deleteList.sharing")}</li>
                   </ul>
                   <p>
-                    Please type <strong>{treeName}</strong> to confirm.
+                    {t("dangerZone.confirmPrompt", { name: treeName })}
                   </p>
                   <Input
                     value={confirmName}
@@ -110,7 +110,7 @@ export function DangerZone({ treeId, treeName }: DangerZoneProps) {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel disabled={deleting}>{t("common.cancel")}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDelete}
                   disabled={confirmName !== treeName || deleting}
@@ -119,10 +119,10 @@ export function DangerZone({ treeId, treeName }: DangerZoneProps) {
                   {deleting ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Deleting...
+                      {t("dangerZone.deleting")}
                     </>
                   ) : (
-                    "Delete Forever"
+                    t("dangerZone.deleteForever")
                   )}
                 </AlertDialogAction>
               </AlertDialogFooter>

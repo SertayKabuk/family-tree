@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,8 @@ export default function InvitePage() {
   const params = useParams();
   const token = params.token as string;
   const { data: session, status } = useSession();
+  const t = useTranslations("invite");
+  const locale = useLocale();
 
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
@@ -40,7 +43,7 @@ export default function InvitePage() {
         const data = await response.json();
         setInvitation(data);
       } catch {
-        setInvitation({ valid: false, error: "Failed to load invitation" });
+        setInvitation({ valid: false, error: t("errors.loadFailed") });
       } finally {
         setLoading(false);
       }
@@ -49,7 +52,7 @@ export default function InvitePage() {
     if (token) {
       fetchInvitation();
     }
-  }, [token]);
+  }, [token, t]);
 
   const handleAccept = async () => {
     if (!session?.user) {
@@ -68,13 +71,13 @@ export default function InvitePage() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success("Successfully joined the family tree!");
+        toast.success(t("success"));
         router.push(`/trees/${data.treeId}`);
       } else {
-        toast.error(data.error || "Failed to accept invitation");
+        toast.error(data.error || t("errors.acceptFailed"));
       }
     } catch {
-      toast.error("Failed to accept invitation");
+      toast.error(t("errors.acceptFailed"));
     } finally {
       setAccepting(false);
     }
@@ -97,10 +100,10 @@ export default function InvitePage() {
           <div className="mx-auto mb-4 p-3 rounded-full bg-primary/10 w-fit">
             <TreePine className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Family Tree Invitation</CardTitle>
+          <CardTitle className="text-2xl">{t("title")}</CardTitle>
           {inv && (
             <CardDescription>
-              You&apos;ve been invited to join &ldquo;{inv.treeName}&rdquo;
+              {t("invitedTo", { name: inv.treeName })}
             </CardDescription>
           )}
         </CardHeader>
@@ -111,33 +114,33 @@ export default function InvitePage() {
                 <XCircle className="h-8 w-8 text-destructive" />
               </div>
               <div>
-                <p className="font-semibold">Invalid Invitation</p>
+                <p className="font-semibold">{t("invalid")}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {invitation?.error || "This invitation is no longer valid."}
+                  {invitation?.error || t("invalidDescription")}
                 </p>
               </div>
               <Button variant="outline" onClick={() => router.push("/")}>
-                Go to Home
+                {t("goHome")}
               </Button>
             </div>
           ) : (
             <>
               <div className="rounded-lg bg-muted p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Family Tree</span>
+                  <span className="text-sm text-muted-foreground">{t("familyTree")}</span>
                   <span className="font-medium">{inv?.treeName}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Your Role</span>
+                  <span className="text-sm text-muted-foreground">{t("yourRole")}</span>
                   <Badge variant="secondary">
-                    {inv?.role === "EDITOR" ? "Editor" : "Viewer"}
+                    {inv?.role === "EDITOR" ? t("editor") : t("viewer")}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Expires</span>
+                  <span className="text-sm text-muted-foreground">{t("details.expires")}</span>
                   <span className="text-sm flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    {new Date(inv?.expiresAt || "").toLocaleDateString()}
+                    {new Date(inv?.expiresAt || "").toLocaleDateString(locale)}
                   </span>
                 </div>
               </div>
@@ -145,7 +148,7 @@ export default function InvitePage() {
               {session?.user ? (
                 <div className="space-y-4">
                   <div className="text-center text-sm text-muted-foreground">
-                    Signed in as <span className="font-medium">{session.user.email}</span>
+                    {t("signedInAs", { email: session.user.email || "" })}
                   </div>
                   <Button
                     className="w-full"
@@ -156,12 +159,12 @@ export default function InvitePage() {
                     {accepting ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Joining...
+                        {t("joining")}
                       </>
                     ) : (
                       <>
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Accept Invitation
+                        {t("accept")}
                       </>
                     )}
                   </Button>
@@ -169,7 +172,7 @@ export default function InvitePage() {
               ) : (
                 <div className="space-y-4">
                   <p className="text-center text-sm text-muted-foreground">
-                    Sign in to accept this invitation
+                    {t("signInToAccept")}
                   </p>
                   <Button
                     className="w-full"
@@ -186,7 +189,7 @@ export default function InvitePage() {
                       <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                       <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                     </svg>
-                    Sign in with Google
+                    {t("signInWithGoogle")}
                   </Button>
                 </div>
               )}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,19 +29,6 @@ interface AddRelationshipDialogProps {
   onClose: () => void;
 }
 
-const RELATIONSHIP_OPTIONS: { value: RelationshipType; label: string; description: string }[] = [
-  { value: "PARENT_CHILD", label: "Parent → Child", description: "First person is the parent" },
-  { value: "SPOUSE", label: "Spouse", description: "Married partners" },
-  { value: "PARTNER", label: "Partner", description: "Unmarried partners" },
-  { value: "EX_SPOUSE", label: "Ex-Spouse", description: "Previously married" },
-  { value: "SIBLING", label: "Sibling", description: "Brothers/Sisters" },
-  { value: "HALF_SIBLING", label: "Half-Sibling", description: "Share one parent" },
-  { value: "STEP_SIBLING", label: "Step-Sibling", description: "Through remarriage" },
-  { value: "ADOPTIVE_PARENT", label: "Adoptive Parent", description: "Adoptive relationship" },
-  { value: "FOSTER_PARENT", label: "Foster Parent", description: "Foster relationship" },
-  { value: "GODPARENT", label: "Godparent", description: "Religious/ceremonial" },
-];
-
 export function AddRelationshipDialog({
   treeId,
   open,
@@ -50,12 +38,26 @@ export function AddRelationshipDialog({
   onClose,
 }: AddRelationshipDialogProps) {
   const router = useRouter();
+  const t = useTranslations();
   const [loading, setLoading] = useState(false);
   const [relationshipType, setRelationshipType] = useState<RelationshipType>("PARENT_CHILD");
   const [marriageDate, setMarriageDate] = useState("");
 
   const fromMember = members.find((m) => m.id === connection?.source);
   const toMember = members.find((m) => m.id === connection?.target);
+
+  const relationshipOptions: { value: RelationshipType; labelKey: string; descKey: string }[] = [
+    { value: "PARENT_CHILD", labelKey: "relationships.types.parentChild.label", descKey: "relationships.types.parentChild.description" },
+    { value: "SPOUSE", labelKey: "relationships.types.spouse.label", descKey: "relationships.types.spouse.description" },
+    { value: "PARTNER", labelKey: "relationships.types.partner.label", descKey: "relationships.types.partner.description" },
+    { value: "EX_SPOUSE", labelKey: "relationships.types.exSpouse.label", descKey: "relationships.types.exSpouse.description" },
+    { value: "SIBLING", labelKey: "relationships.types.sibling.label", descKey: "relationships.types.sibling.description" },
+    { value: "HALF_SIBLING", labelKey: "relationships.types.halfSibling.label", descKey: "relationships.types.halfSibling.description" },
+    { value: "STEP_SIBLING", labelKey: "relationships.types.stepSibling.label", descKey: "relationships.types.stepSibling.description" },
+    { value: "ADOPTIVE_PARENT", labelKey: "relationships.types.adoptiveParent.label", descKey: "relationships.types.adoptiveParent.description" },
+    { value: "FOSTER_PARENT", labelKey: "relationships.types.fosterParent.label", descKey: "relationships.types.fosterParent.description" },
+    { value: "GODPARENT", labelKey: "relationships.types.godparent.label", descKey: "relationships.types.godparent.description" },
+  ];
 
   useEffect(() => {
     if (!open) {
@@ -68,7 +70,7 @@ export function AddRelationshipDialog({
     e.preventDefault();
 
     if (!connection?.source || !connection?.target) {
-      toast.error("Invalid connection");
+      toast.error(t("relationships.errors.invalid"));
       return;
     }
 
@@ -88,15 +90,15 @@ export function AddRelationshipDialog({
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Failed to create relationship");
+        throw new Error(data.error || t("relationships.errors.failed"));
       }
 
-      toast.success("Relationship created!");
+      toast.success(t("relationships.success"));
       onOpenChange(false);
       onClose();
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create relationship");
+      toast.error(error instanceof Error ? error.message : t("relationships.errors.failed"));
     } finally {
       setLoading(false);
     }
@@ -114,9 +116,9 @@ export function AddRelationshipDialog({
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create Relationship</DialogTitle>
+            <DialogTitle>{t("relationships.title")}</DialogTitle>
             <DialogDescription>
-              Define the relationship between these family members.
+              {t("relationships.description")}
             </DialogDescription>
           </DialogHeader>
 
@@ -134,22 +136,24 @@ export function AddRelationshipDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="type">Relationship Type</Label>
+              <Label htmlFor="type">{t("relationships.typeLabel")}</Label>
               <Select
                 value={relationshipType}
                 onValueChange={(value) => value && setRelationshipType(value as RelationshipType)}
                 disabled={loading}
               >
                 <SelectTrigger id="type">
-                  <SelectValue />
+                  <SelectValue>
+                    {t(relationshipOptions.find(o => o.value === relationshipType)?.labelKey || "")}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {RELATIONSHIP_OPTIONS.map((option) => (
+                  {relationshipOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      <div className="flex flex-col">
-                        <span>{option.label}</span>
+                      <div className="flex flex-col items-start">
+                        <span>{t(option.labelKey)}</span>
                         <span className="text-xs text-muted-foreground">
-                          {option.description}
+                          {t(option.descKey)}
                         </span>
                       </div>
                     </SelectItem>
@@ -161,7 +165,7 @@ export function AddRelationshipDialog({
             {isMarriageType && (
               <div className="grid gap-2">
                 <Label htmlFor="marriageDate">
-                  {relationshipType === "EX_SPOUSE" ? "Marriage Date" : "Marriage/Partnership Date"}
+                  {relationshipType === "EX_SPOUSE" ? t("relationships.marriageDate") : t("relationships.marriagePartnershipDate")}
                 </Label>
                 <Input
                   id="marriageDate"
@@ -176,11 +180,11 @@ export function AddRelationshipDialog({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Create Relationship
+              {t("relationships.submit")}
             </Button>
           </DialogFooter>
         </form>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,6 +28,7 @@ interface AddMemberDialogProps {
 
 export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogProps) {
   const router = useRouter();
+  const t = useTranslations();
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -59,7 +61,7 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
     e.preventDefault();
 
     if (!formData.firstName.trim()) {
-      toast.error("First name is required");
+      toast.error(t("addMember.errors.firstNameRequired"));
       return;
     }
 
@@ -86,12 +88,12 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
         throw new Error("Failed to add member");
       }
 
-      toast.success("Family member added!");
+      toast.success(t("addMember.success"));
       resetForm();
       onOpenChange(false);
       router.refresh();
     } catch {
-      toast.error("Failed to add family member. Please try again.");
+      toast.error(t("addMember.errors.failed"));
     } finally {
       setLoading(false);
     }
@@ -102,16 +104,16 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Add Family Member</DialogTitle>
+            <DialogTitle>{t("addMember.title")}</DialogTitle>
             <DialogDescription>
-              Add a new person to your family tree.
+              {t("addMember.description")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="firstName">First Name *</Label>
+                <Label htmlFor="firstName">{t("addMember.firstNameRequired")}</Label>
                 <Input
                   id="firstName"
                   value={formData.firstName}
@@ -119,11 +121,11 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
                     setFormData({ ...formData, firstName: e.target.value })
                   }
                   disabled={loading}
-                  placeholder="John"
+                  placeholder={t("addMember.placeholders.firstName")}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="lastName">Last Name</Label>
+                <Label htmlFor="lastName">{t("addMember.lastName")}</Label>
                 <Input
                   id="lastName"
                   value={formData.lastName}
@@ -131,14 +133,14 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
                     setFormData({ ...formData, lastName: e.target.value })
                   }
                   disabled={loading}
-                  placeholder="Doe"
+                  placeholder={t("addMember.placeholders.lastName")}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="nickname">Nickname</Label>
+                <Label htmlFor="nickname">{t("addMember.nickname")}</Label>
                 <Input
                   id="nickname"
                   value={formData.nickname}
@@ -146,11 +148,11 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
                     setFormData({ ...formData, nickname: e.target.value })
                   }
                   disabled={loading}
-                  placeholder="Johnny"
+                  placeholder={t("addMember.placeholders.nickname")}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="gender">Gender *</Label>
+                <Label htmlFor="gender">{t("addMember.genderRequired")}</Label>
                 <Select
                   value={formData.gender}
                   onValueChange={(value) =>
@@ -162,10 +164,10 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MALE">Male</SelectItem>
-                    <SelectItem value="FEMALE">Female</SelectItem>
-                    <SelectItem value="OTHER">Other</SelectItem>
-                    <SelectItem value="UNKNOWN">Unknown</SelectItem>
+                    <SelectItem value="MALE">{t("gender.male")}</SelectItem>
+                    <SelectItem value="FEMALE">{t("gender.female")}</SelectItem>
+                    <SelectItem value="OTHER">{t("gender.other")}</SelectItem>
+                    <SelectItem value="UNKNOWN">{t("gender.unknown")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -173,7 +175,7 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="birthDate">Birth Date</Label>
+                <Label htmlFor="birthDate">{t("addMember.birthDate")}</Label>
                 <Input
                   id="birthDate"
                   type="date"
@@ -185,7 +187,7 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="deathDate">Death Date</Label>
+                <Label htmlFor="deathDate">{t("addMember.deathDate")}</Label>
                 <Input
                   id="deathDate"
                   type="date"
@@ -200,7 +202,7 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="birthPlace">Birth Place</Label>
+                <Label htmlFor="birthPlace">{t("addMember.birthPlace")}</Label>
                 <Input
                   id="birthPlace"
                   value={formData.birthPlace}
@@ -208,11 +210,11 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
                     setFormData({ ...formData, birthPlace: e.target.value })
                   }
                   disabled={loading}
-                  placeholder="New York, USA"
+                  placeholder={t("addMember.placeholders.birthPlace")}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="occupation">Occupation</Label>
+                <Label htmlFor="occupation">{t("addMember.occupation")}</Label>
                 <Input
                   id="occupation"
                   value={formData.occupation}
@@ -220,13 +222,13 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
                     setFormData({ ...formData, occupation: e.target.value })
                   }
                   disabled={loading}
-                  placeholder="Teacher"
+                  placeholder={t("addMember.placeholders.occupation")}
                 />
               </div>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="bio">Bio</Label>
+              <Label htmlFor="bio">{t("addMember.bio")}</Label>
               <Textarea
                 id="bio"
                 value={formData.bio}
@@ -234,7 +236,7 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
                   setFormData({ ...formData, bio: e.target.value })
                 }
                 disabled={loading}
-                placeholder="A brief biography..."
+                placeholder={t("addMember.placeholders.bio")}
                 rows={3}
               />
             </div>
@@ -250,11 +252,11 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
               }}
               disabled={loading}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Add Member
+              {t("addMember.submit")}
             </Button>
           </DialogFooter>
         </form>

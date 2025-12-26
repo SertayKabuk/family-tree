@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/permissions";
 import { TreeSettingsForm } from "@/components/tree/tree-settings-form";
 import { ShareSection } from "@/components/tree/share-section";
 import { DangerZone } from "@/components/tree/danger-zone";
+import { getTranslations } from "next-intl/server";
 
 interface SettingsPageProps {
   params: Promise<{ treeId: string }>;
@@ -13,6 +14,7 @@ interface SettingsPageProps {
 export default async function TreeSettingsPage({ params }: SettingsPageProps) {
   const { treeId } = await params;
   const session = await auth();
+  const t = await getTranslations("settingsPage");
 
   if (!session?.user?.id) {
     redirect("/login");
@@ -52,9 +54,9 @@ export default async function TreeSettingsPage({ params }: SettingsPageProps) {
   return (
     <div className="container max-w-3xl py-8 space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Tree Settings</h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         <p className="text-muted-foreground">
-          Manage settings for &ldquo;{tree.name}&rdquo;
+          {t("description", { name: tree.name })}
         </p>
       </div>
 

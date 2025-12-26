@@ -10,7 +10,9 @@
       "Bash(npx prisma:*)",
       "Bash(npx shadcn@latest add:*)",
       "Bash(npm run build:*)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(pnpm add:*)"
     ]
   }
 }

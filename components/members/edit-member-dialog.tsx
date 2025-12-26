@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,6 +34,7 @@ export function EditMemberDialog({
   onOpenChange,
 }: EditMemberDialogProps) {
   const router = useRouter();
+  const t = useTranslations();
   const [loading, setLoading] = useState(false);
 
   const formatDateForInput = (date: Date | null) => {
@@ -57,7 +59,7 @@ export function EditMemberDialog({
     e.preventDefault();
 
     if (!formData.firstName.trim()) {
-      toast.error("First name is required");
+      toast.error(t("editMember.errors.firstNameRequired"));
       return;
     }
 
@@ -85,11 +87,11 @@ export function EditMemberDialog({
         throw new Error("Failed to update member");
       }
 
-      toast.success("Member updated");
+      toast.success(t("editMember.success"));
       onOpenChange(false);
       router.refresh();
     } catch {
-      toast.error("Failed to update member");
+      toast.error(t("editMember.errors.failed"));
     } finally {
       setLoading(false);
     }
@@ -100,16 +102,16 @@ export function EditMemberDialog({
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Edit Family Member</DialogTitle>
+            <DialogTitle>{t("editMember.title")}</DialogTitle>
             <DialogDescription>
-              Update information for {member.firstName}
+              {t("editMember.description", { name: member.firstName })}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="edit-firstName">First Name *</Label>
+                <Label htmlFor="edit-firstName">{t("editMember.firstName")} *</Label>
                 <Input
                   id="edit-firstName"
                   value={formData.firstName}
@@ -118,7 +120,7 @@ export function EditMemberDialog({
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-lastName">Last Name</Label>
+                <Label htmlFor="edit-lastName">{t("editMember.lastName")}</Label>
                 <Input
                   id="edit-lastName"
                   value={formData.lastName}
@@ -130,7 +132,7 @@ export function EditMemberDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="edit-nickname">Nickname</Label>
+                <Label htmlFor="edit-nickname">{t("editMember.nickname")}</Label>
                 <Input
                   id="edit-nickname"
                   value={formData.nickname}
@@ -139,7 +141,7 @@ export function EditMemberDialog({
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-gender">Gender</Label>
+                <Label htmlFor="edit-gender">{t("editMember.gender")}</Label>
                 <Select
                   value={formData.gender}
                   onValueChange={(value) => value && setFormData({ ...formData, gender: value as Gender })}
@@ -149,10 +151,10 @@ export function EditMemberDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MALE">Male</SelectItem>
-                    <SelectItem value="FEMALE">Female</SelectItem>
-                    <SelectItem value="OTHER">Other</SelectItem>
-                    <SelectItem value="UNKNOWN">Unknown</SelectItem>
+                    <SelectItem value="MALE">{t("gender.male")}</SelectItem>
+                    <SelectItem value="FEMALE">{t("gender.female")}</SelectItem>
+                    <SelectItem value="OTHER">{t("gender.other")}</SelectItem>
+                    <SelectItem value="UNKNOWN">{t("gender.unknown")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -160,7 +162,7 @@ export function EditMemberDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="edit-birthDate">Birth Date</Label>
+                <Label htmlFor="edit-birthDate">{t("editMember.birthDate")}</Label>
                 <Input
                   id="edit-birthDate"
                   type="date"
@@ -170,7 +172,7 @@ export function EditMemberDialog({
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-deathDate">Death Date</Label>
+                <Label htmlFor="edit-deathDate">{t("editMember.deathDate")}</Label>
                 <Input
                   id="edit-deathDate"
                   type="date"
@@ -183,7 +185,7 @@ export function EditMemberDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="edit-birthPlace">Birth Place</Label>
+                <Label htmlFor="edit-birthPlace">{t("editMember.birthPlace")}</Label>
                 <Input
                   id="edit-birthPlace"
                   value={formData.birthPlace}
@@ -192,7 +194,7 @@ export function EditMemberDialog({
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-deathPlace">Death Place</Label>
+                <Label htmlFor="edit-deathPlace">{t("editMember.deathPlace")}</Label>
                 <Input
                   id="edit-deathPlace"
                   value={formData.deathPlace}
@@ -203,7 +205,7 @@ export function EditMemberDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-occupation">Occupation</Label>
+              <Label htmlFor="edit-occupation">{t("editMember.occupation")}</Label>
               <Input
                 id="edit-occupation"
                 value={formData.occupation}
@@ -213,7 +215,7 @@ export function EditMemberDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-bio">Bio</Label>
+              <Label htmlFor="edit-bio">{t("editMember.bio")}</Label>
               <Textarea
                 id="edit-bio"
                 value={formData.bio}
@@ -226,11 +228,11 @@ export function EditMemberDialog({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Save Changes
+              {t("editMember.saveChanges")}
             </Button>
           </DialogFooter>
         </form>

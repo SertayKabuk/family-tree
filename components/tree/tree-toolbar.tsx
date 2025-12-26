@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -12,6 +13,7 @@ interface TreeToolbarProps {
 }
 
 export function TreeToolbar({ onAddMember, onAutoLayout }: TreeToolbarProps) {
+  const t = useTranslations("toolbar");
   const { zoomIn, zoomOut, fitView } = useReactFlow();
 
   return (
@@ -23,7 +25,7 @@ export function TreeToolbar({ onAddMember, onAutoLayout }: TreeToolbarProps) {
           >
             <UserPlus className="h-5 w-5" />
           </TooltipTrigger>
-          <TooltipContent side="right">Add Family Member</TooltipContent>
+          <TooltipContent side="right">{t("addMember")}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -32,7 +34,7 @@ export function TreeToolbar({ onAddMember, onAutoLayout }: TreeToolbarProps) {
           >
             <LayoutGrid className="h-5 w-5" />
           </TooltipTrigger>
-          <TooltipContent side="right">Auto-arrange Layout</TooltipContent>
+          <TooltipContent side="right">{t("autoLayout")}</TooltipContent>
         </Tooltip>
 
         <div className="h-px bg-border my-1" />
@@ -43,7 +45,7 @@ export function TreeToolbar({ onAddMember, onAutoLayout }: TreeToolbarProps) {
           >
             <ZoomIn className="h-5 w-5" />
           </TooltipTrigger>
-          <TooltipContent side="right">Zoom In</TooltipContent>
+          <TooltipContent side="right">{t("zoomIn")}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -52,7 +54,7 @@ export function TreeToolbar({ onAddMember, onAutoLayout }: TreeToolbarProps) {
           >
             <ZoomOut className="h-5 w-5" />
           </TooltipTrigger>
-          <TooltipContent side="right">Zoom Out</TooltipContent>
+          <TooltipContent side="right">{t("zoomOut")}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -72,7 +74,7 @@ export function TreeToolbar({ onAddMember, onAutoLayout }: TreeToolbarProps) {
               <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
             </svg>
           </TooltipTrigger>
-          <TooltipContent side="right">Fit to View</TooltipContent>
+          <TooltipContent side="right">{t("fitView")}</TooltipContent>
         </Tooltip>
       </Card>
     </TooltipProvider>

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { auth } from "@/auth";
+import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TreePine, Users, Share2, Image as ImageIcon, FileText, Mic } from "lucide-react";
 
 export default async function HomePage() {
   const session = await auth();
+  const t = await getTranslations();
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden">
@@ -14,16 +16,16 @@ export default async function HomePage() {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
             <TreePine className="h-6 w-6 text-primary" />
-            <span className="font-semibold text-lg">Family Tree</span>
+            <span className="font-semibold text-lg">{t("common.appName")}</span>
           </div>
           <nav>
             {session?.user ? (
               <Link href="/dashboard">
-                <Button>Go to Dashboard</Button>
+                <Button>{t("home.goToDashboard")}</Button>
               </Link>
             ) : (
               <Link href="/login">
-                <Button>Sign In</Button>
+                <Button>{t("auth.signIn")}</Button>
               </Link>
             )}
           </nav>
@@ -33,15 +35,14 @@ export default async function HomePage() {
       {/* Hero */}
       <section className="container py-24 text-center">
         <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-          Preserve Your Family History
+          {t("home.heroTitle")}
         </h1>
         <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
-          Create beautiful family trees, document memories with photos and audio,
-          and share your heritage with loved ones.
+          {t("home.heroDescription")}
         </p>
         <div className="mt-10 flex items-center justify-center gap-4">
           <Link href={session?.user ? "/dashboard" : "/login"}>
-            <Button size="lg">Get Started</Button>
+            <Button size="lg">{t("home.getStarted")}</Button>
           </Link>
         </div>
       </section>
@@ -49,7 +50,7 @@ export default async function HomePage() {
       {/* Features */}
       <section className="container py-16">
         <h2 className="text-2xl font-bold text-center mb-12">
-          Everything you need to document your family
+          {t("home.featuresTitle")}
         </h2>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <Card>
@@ -59,9 +60,9 @@ export default async function HomePage() {
                   <TreePine className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Visual Family Tree</h3>
+                  <h3 className="font-semibold">{t("home.features.visualTree.title")}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Interactive mindmap with drag-and-drop
+                    {t("home.features.visualTree.description")}
                   </p>
                 </div>
               </div>
@@ -75,9 +76,9 @@ export default async function HomePage() {
                   <Users className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Relationship Mapping</h3>
+                  <h3 className="font-semibold">{t("home.features.relationships.title")}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Color-coded connections between members
+                    {t("home.features.relationships.description")}
                   </p>
                 </div>
               </div>
@@ -91,9 +92,9 @@ export default async function HomePage() {
                   <Share2 className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Easy Sharing</h3>
+                  <h3 className="font-semibold">{t("home.features.sharing.title")}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Invite family via WhatsApp or email
+                    {t("home.features.sharing.description")}
                   </p>
                 </div>
               </div>
@@ -107,9 +108,9 @@ export default async function HomePage() {
                   <ImageIcon className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Photo Gallery</h3>
+                  <h3 className="font-semibold">{t("home.features.photos.title")}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Store photos for each family member
+                    {t("home.features.photos.description")}
                   </p>
                 </div>
               </div>
@@ -123,9 +124,9 @@ export default async function HomePage() {
                   <FileText className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Documents & Facts</h3>
+                  <h3 className="font-semibold">{t("home.features.documents.title")}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Preserve important records and stories
+                    {t("home.features.documents.description")}
                   </p>
                 </div>
               </div>
@@ -139,9 +140,9 @@ export default async function HomePage() {
                   <Mic className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Audio Memories</h3>
+                  <h3 className="font-semibold">{t("home.features.audio.title")}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Record and preserve voices and stories
+                    {t("home.features.audio.description")}
                   </p>
                 </div>
               </div>
@@ -153,7 +154,7 @@ export default async function HomePage() {
       {/* Footer */}
       <footer className="border-t py-8 mt-16">
         <div className="container text-center text-sm text-muted-foreground">
-          <p>Family Tree App - Preserve your heritage for generations</p>
+          <p>{t("home.footer")}</p>
         </div>
       </footer>
     </div>

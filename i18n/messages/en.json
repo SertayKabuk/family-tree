@@ -1,0 +1,433 @@
+{
+  "common": {
+    "appName": "Family Tree",
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "upload": "Upload",
+    "uploading": "Uploading...",
+    "done": "Done",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "yes": "Yes",
+    "no": "No",
+    "or": "or",
+    "source": "Source"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signOut": "Log out",
+    "signInWithGoogle": "Sign in with Google",
+    "signInToAccept": "Sign in to accept this invitation",
+    "signedInAs": "Signed in as",
+    "termsAgreement": "By signing in, you agree to our Terms of Service and Privacy Policy"
+  },
+  "theme": {
+    "toggle": "Toggle theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "treeHeader": {
+    "members": "{count} members",
+    "share": "Share"
+  },
+  "home": {
+    "goToDashboard": "Go to Dashboard",
+    "heroTitle": "Preserve Your Family History",
+    "heroDescription": "Create beautiful family trees, document memories with photos and audio, and share your heritage with loved ones.",
+    "getStarted": "Get Started",
+    "featuresTitle": "Everything you need to document your family",
+    "features": {
+      "visualTree": {
+        "title": "Visual Family Tree",
+        "description": "Interactive mindmap with drag-and-drop"
+      },
+      "relationships": {
+        "title": "Relationship Mapping",
+        "description": "Color-coded connections between members"
+      },
+      "sharing": {
+        "title": "Easy Sharing",
+        "description": "Invite family via WhatsApp or email"
+      },
+      "photos": {
+        "title": "Photo Gallery",
+        "description": "Store photos for each family member"
+      },
+      "documents": {
+        "title": "Documents & Facts",
+        "description": "Preserve important records and stories"
+      },
+      "audio": {
+        "title": "Audio Memories",
+        "description": "Record and preserve voices and stories"
+      }
+    },
+    "footer": "Family Tree App - Preserve your heritage for generations"
+  },
+  "login": {
+    "welcome": "Welcome to Family Tree",
+    "description": "Sign in to create and manage your family tree"
+  },
+  "header": {
+    "myTrees": "My Trees",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "My Family Trees",
+    "subtitle": "Create and manage your family trees",
+    "yourTrees": "Your Trees",
+    "sharedWithYou": "Shared With You",
+    "members": "{count} members",
+    "updated": "Updated {date}",
+    "ownedBy": "Owned by {name}",
+    "noTrees": {
+      "title": "No family trees yet",
+      "description": "Create your first family tree to start documenting your family history and connections."
+    },
+    "newTree": "New Tree"
+  },
+  "roles": {
+    "owner": "Owner",
+    "editor": "Editor",
+    "viewer": "Viewer"
+  },
+  "createTree": {
+    "title": "Create Family Tree",
+    "description": "Start a new family tree to document your family history.",
+    "nameLabel": "Name",
+    "namePlaceholder": "e.g., Smith Family Tree",
+    "descriptionLabel": "Description (optional)",
+    "descriptionPlaceholder": "A brief description of this family tree...",
+    "submit": "Create Tree",
+    "errors": {
+      "nameRequired": "Please enter a name for your family tree",
+      "failed": "Failed to create family tree. Please try again."
+    },
+    "success": "Family tree created!"
+  },
+  "addMember": {
+    "title": "Add Family Member",
+    "description": "Add a new person to your family tree.",
+    "firstName": "First Name",
+    "firstNameRequired": "First Name *",
+    "lastName": "Last Name",
+    "nickname": "Nickname",
+    "gender": "Gender",
+    "genderRequired": "Gender *",
+    "birthDate": "Birth Date",
+    "deathDate": "Death Date",
+    "birthPlace": "Birth Place",
+    "deathPlace": "Death Place",
+    "occupation": "Occupation",
+    "bio": "Bio",
+    "placeholders": {
+      "firstName": "John",
+      "lastName": "Doe",
+      "nickname": "Johnny",
+      "birthPlace": "New York, USA",
+      "occupation": "Teacher",
+      "bio": "A brief biography..."
+    },
+    "submit": "Add Member",
+    "errors": {
+      "firstNameRequired": "First name is required",
+      "failed": "Failed to add family member. Please try again."
+    },
+    "success": "Family member added!"
+  },
+  "editMember": {
+    "title": "Edit Family Member",
+    "description": "Update information for {name}",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "nickname": "Nickname",
+    "gender": "Gender",
+    "birthDate": "Birth Date",
+    "deathDate": "Death Date",
+    "birthPlace": "Birth Place",
+    "deathPlace": "Death Place",
+    "occupation": "Occupation",
+    "bio": "Bio",
+    "saveChanges": "Save Changes",
+    "submit": "Save Changes",
+    "errors": {
+      "firstNameRequired": "First name is required",
+      "failed": "Failed to update member"
+    },
+    "success": "Member updated"
+  },
+  "gender": {
+    "male": "Male",
+    "female": "Female",
+    "other": "Other",
+    "unknown": "Unknown"
+  },
+  "relationships": {
+    "title": "Create Relationship",
+    "description": "Define the relationship between these family members.",
+    "typeLabel": "Relationship Type",
+    "marriageDate": "Marriage Date",
+    "marriagePartnershipDate": "Marriage/Partnership Date",
+    "submit": "Create Relationship",
+    "errors": {
+      "invalid": "Invalid connection",
+      "failed": "Failed to create relationship"
+    },
+    "success": "Relationship created!",
+    "types": {
+      "parentChild": {
+        "label": "Parent -> Child",
+        "description": "First person is the parent"
+      },
+      "spouse": {
+        "label": "Spouse",
+        "description": "Married partners"
+      },
+      "partner": {
+        "label": "Partner",
+        "description": "Unmarried partners"
+      },
+      "exSpouse": {
+        "label": "Ex-Spouse",
+        "description": "Previously married"
+      },
+      "sibling": {
+        "label": "Sibling",
+        "description": "Brothers/Sisters"
+      },
+      "halfSibling": {
+        "label": "Half-Sibling",
+        "description": "Share one parent"
+      },
+      "stepSibling": {
+        "label": "Step-Sibling",
+        "description": "Through remarriage"
+      },
+      "adoptiveParent": {
+        "label": "Adoptive Parent",
+        "description": "Adoptive relationship"
+      },
+      "fosterParent": {
+        "label": "Foster Parent",
+        "description": "Foster relationship"
+      },
+      "godparent": {
+        "label": "Godparent",
+        "description": "Religious/ceremonial"
+      }
+    },
+    "labels": {
+      "father": "Father",
+      "mother": "Mother",
+      "parent": "Parent",
+      "spouse": "Spouse",
+      "partner": "Partner",
+      "exSpouse": "Ex-Spouse",
+      "brother": "Brother",
+      "sister": "Sister",
+      "sibling": "Sibling",
+      "halfSibling": "Half-Sibling",
+      "stepSibling": "Step-Sibling",
+      "adoptiveFather": "Adoptive Father",
+      "adoptiveMother": "Adoptive Mother",
+      "adoptiveParent": "Adoptive Parent",
+      "fosterFather": "Foster Father",
+      "fosterMother": "Foster Mother",
+      "fosterParent": "Foster Parent",
+      "godfather": "Godfather",
+      "godmother": "Godmother",
+      "godparent": "Godparent",
+      "child": "Child",
+      "son": "Son",
+      "daughter": "Daughter"
+    }
+  },
+  "settingsPage": {
+    "title": "Tree Settings",
+    "description": "Manage settings for \"{name}\""
+  },
+  "toolbar": {
+    "addMember": "Add Family Member",
+    "autoLayout": "Auto-arrange Layout",
+    "zoomIn": "Zoom In",
+    "zoomOut": "Zoom Out",
+    "fitView": "Fit to View"
+  },
+  "settings": {
+    "general": {
+      "title": "General",
+      "description": "Basic information about your family tree"
+    },
+    "name": "Name",
+    "description": "Description",
+    "publicTree": "Public Tree",
+    "publicTreeDescription": "Allow anyone with the link to view this tree",
+    "saveChanges": "Save Changes",
+    "errors": {
+      "nameRequired": "Name is required",
+      "failed": "Failed to save settings"
+    },
+    "success": "Settings saved"
+  },
+  "sharing": {
+    "title": "Sharing",
+    "description": "Invite family members to view or edit this tree",
+    "createInvite": "Create Invite Link",
+    "createInviteTitle": "Create Invitation",
+    "createInviteDescription": "Create a shareable link to invite family members",
+    "permissionLevel": "Permission Level",
+    "viewerDescription": "Viewer - Can only view the tree",
+    "editorDescription": "Editor - Can add and edit members",
+    "shareLink": "Share Link",
+    "generateLink": "Generate Link",
+    "whatsapp": "WhatsApp",
+    "email": "Email",
+    "members": "Members",
+    "pendingInvitations": "Pending Invitations",
+    "anyoneWithLink": "Anyone with link",
+    "expires": "Expires {date}",
+    "success": {
+      "linkCopied": "Link copied to clipboard",
+      "inviteDeleted": "Invitation deleted"
+    },
+    "errors": {
+      "createFailed": "Failed to create invitation link",
+      "deleteFailed": "Failed to delete invitation"
+    }
+  },
+  "dangerZone": {
+    "title": "Danger Zone",
+    "description": "Irreversible actions that permanently affect your family tree",
+    "deleteTree": "Delete this family tree",
+    "deleteTreeDescription": "Permanently delete all members, photos, documents, and data",
+    "deleteButton": "Delete Tree",
+    "deleteDialogTitle": "Delete Family Tree",
+    "deleteDialogDescription": "This action cannot be undone. This will permanently delete the family tree \"{name}\" and all associated data including:",
+    "deleteList": {
+      "members": "All family members and their profiles",
+      "media": "All photos, documents, and audio files",
+      "relationships": "All relationships and facts",
+      "sharing": "All sharing settings and invitations"
+    },
+    "confirmPrompt": "Please type {name} to confirm.",
+    "deleteForever": "Delete Forever",
+    "deleting": "Deleting...",
+    "errors": {
+      "confirmMismatch": "Please type the tree name correctly to confirm",
+      "failed": "Failed to delete family tree"
+    },
+    "success": "Family tree deleted"
+  },
+  "profile": {
+    "backTo": "Back to {name}",
+    "biography": "Biography",
+    "relationships": "Relationships",
+    "born": "Born {date}",
+    "bornIn": "Born {date} in {place}",
+    "died": "Died {date}",
+    "diedIn": "Died {date} in {place}",
+    "tabs": {
+      "photos": "Photos",
+      "documents": "Documents",
+      "audio": "Audio",
+      "facts": "Facts"
+    },
+    "photos": {
+      "title": "Photos",
+      "empty": "No photos yet",
+      "deleteTitle": "Delete Photo",
+      "deleteDescription": "Are you sure you want to delete this photo? This action cannot be undone."
+    },
+    "documents": {
+      "title": "Documents",
+      "empty": "No documents yet",
+      "deleteTitle": "Delete Document",
+      "deleteDescription": "Are you sure you want to delete \"{title}\"? This action cannot be undone."
+    },
+    "audio": {
+      "title": "Audio Clips",
+      "empty": "No audio clips yet",
+      "deleteTitle": "Delete Audio Clip",
+      "deleteDescription": "Are you sure you want to delete \"{title}\"? This action cannot be undone.",
+      "notSupported": "Your browser does not support audio playback."
+    },
+    "facts": {
+      "title": "Facts & Stories",
+      "empty": "No facts recorded yet",
+      "addFact": "Add Fact"
+    },
+    "media": {
+      "deleteSuccess": "Deleted successfully",
+      "deleteError": "Failed to delete"
+    }
+  },
+  "addFact": {
+    "title": "Add Fact",
+    "description": "Record a fact, story, or memory about this family member",
+    "titleLabel": "Title *",
+    "titlePlaceholder": "e.g., First job, Wedding day, etc.",
+    "contentLabel": "Content *",
+    "contentPlaceholder": "Tell the story or describe the fact...",
+    "dateLabel": "Date",
+    "sourceLabel": "Source",
+    "sourcePlaceholder": "e.g., Family album, Interview",
+    "submit": "Add Fact",
+    "errors": {
+      "required": "Title and content are required",
+      "failed": "Failed to add fact"
+    },
+    "success": "Fact added"
+  },
+  "mediaUpload": {
+    "photos": {
+      "title": "Upload Photos",
+      "description": "Add photos for this family member"
+    },
+    "documents": {
+      "title": "Upload Documents",
+      "description": "Add documents like birth certificates, letters, etc."
+    },
+    "audio": {
+      "title": "Upload Audio",
+      "description": "Add audio recordings of stories or memories"
+    },
+    "selectFile": "Click to select a file or drag and drop",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Enter a title for this file",
+    "errors": {
+      "noFile": "Please select a file",
+      "failed": "Upload failed"
+    },
+    "success": "File uploaded successfully"
+  },
+  "memberModal": {
+    "memberDeleted": "Family member deleted",
+    "deleteFailed": "Failed to delete family member",
+    "deleteMember": "Delete Member",
+    "deleteDialogTitle": "Delete Family Member",
+    "deleteDialogDescription": "Are you sure you want to delete {name}? This will also remove all their relationships, photos, documents, and other data. This action cannot be undone."
+  },
+  "invite": {
+    "title": "Family Tree Invitation",
+    "invitedTo": "You've been invited to join \"{name}\"",
+    "invalid": {
+      "title": "Invalid Invitation",
+      "description": "This invitation is no longer valid.",
+      "goHome": "Go to Home"
+    },
+    "details": {
+      "familyTree": "Family Tree",
+      "yourRole": "Your Role",
+      "expires": "Expires"
+    },
+    "accept": "Accept Invitation",
+    "joining": "Joining...",
+    "success": "Successfully joined the family tree!",
+    "error": "Failed to accept invitation"
+  }
+}

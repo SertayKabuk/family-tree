@@ -23,7 +23,7 @@ import { FamilyMember, Relationship } from "@prisma/client";
 import { FamilyMemberNode, FamilyMemberNodeData } from "@/components/nodes/family-member-node";
 import { RelationshipEdge, RelationshipEdgeData } from "@/components/edges/relationship-edge";
 import { TreeToolbar } from "@/components/tree/tree-toolbar";
-import { MemberDetailSheet } from "@/components/tree/member-detail-sheet";
+import { MemberDetailModal } from "@/components/tree/member-detail-modal";
 import { AddMemberDialog } from "@/components/tree/add-member-dialog";
 import { AddRelationshipDialog } from "@/components/tree/add-relationship-dialog";
 import { getLayoutedElements } from "@/lib/tree-layout";
@@ -123,7 +123,7 @@ function FamilyTreeCanvasInner({
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
   const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [addRelationshipOpen, setAddRelationshipOpen] = useState(false);
   const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
@@ -140,7 +140,18 @@ function FamilyTreeCanvasInner({
       const member = members.find((m) => m.id === node.id);
       if (member) {
         setSelectedMember(member);
-        setSheetOpen(true);
+        setModalOpen(true);
+      }
+    },
+    [members]
+  );
+
+  // Handle selecting a related member from within the modal
+  const handleMemberSelect = useCallback(
+    (memberId: string) => {
+      const member = members.find((m) => m.id === memberId);
+      if (member) {
+        setSelectedMember(member);
       }
     },
     [members]
@@ -267,12 +278,13 @@ function FamilyTreeCanvasInner({
         />
       )}
 
-      <MemberDetailSheet
+      <MemberDetailModal
         member={selectedMember}
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
         treeId={treeId}
         canEdit={canEdit}
+        onMemberSelect={handleMemberSelect}
       />
 
       <AddMemberDialog

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations, useLocale } from "next-intl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TreePine, Users, Clock, Crown, Eye, Edit } from "lucide-react";
@@ -34,12 +35,20 @@ function TreeCard({
   role?: MemberRole;
   ownerName?: string;
 }) {
+  const t = useTranslations();
+  const locale = useLocale();
   const roleIcons = {
     OWNER: Crown,
     EDITOR: Edit,
     VIEWER: Eye,
   };
   const RoleIcon = role ? roleIcons[role] : Crown;
+
+  const roleLabels: Record<MemberRole, string> = {
+    OWNER: t("roles.owner"),
+    EDITOR: t("roles.editor"),
+    VIEWER: t("roles.viewer"),
+  };
 
   return (
     <Link href={`/trees/${tree.id}`}>
@@ -53,7 +62,7 @@ function TreeCard({
             {role && (
               <Badge variant={role === "OWNER" ? "default" : "secondary"}>
                 <RoleIcon className="h-3 w-3 mr-1" />
-                {role.charAt(0) + role.slice(1).toLowerCase()}
+                {roleLabels[role]}
               </Badge>
             )}
           </div>
@@ -67,18 +76,18 @@ function TreeCard({
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Users className="h-4 w-4" />
-              <span>{tree._count.familyMembers} members</span>
+              <span>{t("dashboard.members", { count: tree._count.familyMembers })}</span>
             </div>
             <div className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
               <span>
-                Updated {new Date(tree.updatedAt).toLocaleDateString()}
+                {t("dashboard.updated", { date: new Date(tree.updatedAt).toLocaleDateString(locale) })}
               </span>
             </div>
           </div>
           {ownerName && (
             <p className="mt-2 text-sm text-muted-foreground">
-              Owned by {ownerName}
+              {t("dashboard.ownedBy", { name: ownerName })}
             </p>
           )}
         </CardContent>
@@ -88,6 +97,7 @@ function TreeCard({
 }
 
 export function TreesList({ ownedTrees, sharedTrees }: TreesListProps) {
+  const t = useTranslations();
   const hasNoTrees = ownedTrees.length === 0 && sharedTrees.length === 0;
 
   if (hasNoTrees) {
@@ -95,10 +105,9 @@ export function TreesList({ ownedTrees, sharedTrees }: TreesListProps) {
       <Card className="border-dashed">
         <CardContent className="flex flex-col items-center justify-center py-16">
           <TreePine className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No family trees yet</h3>
+          <h3 className="text-lg font-semibold mb-2">{t("dashboard.noTrees.title")}</h3>
           <p className="text-muted-foreground text-center max-w-sm">
-            Create your first family tree to start documenting your family
-            history and connections.
+            {t("dashboard.noTrees.description")}
           </p>
         </CardContent>
       </Card>
@@ -109,7 +118,7 @@ export function TreesList({ ownedTrees, sharedTrees }: TreesListProps) {
     <div className="space-y-8">
       {ownedTrees.length > 0 && (
         <section>
-          <h2 className="text-xl font-semibold mb-4">Your Trees</h2>
+          <h2 className="text-xl font-semibold mb-4">{t("dashboard.yourTrees")}</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {ownedTrees.map((tree) => (
               <TreeCard key={tree.id} tree={tree} role="OWNER" />
@@ -120,7 +129,7 @@ export function TreesList({ ownedTrees, sharedTrees }: TreesListProps) {
 
       {sharedTrees.length > 0 && (
         <section>
-          <h2 className="text-xl font-semibold mb-4">Shared With You</h2>
+          <h2 className="text-xl font-semibold mb-4">{t("dashboard.sharedWithYou")}</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {sharedTrees.map((tree) => (
               <TreeCard

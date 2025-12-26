@@ -1,11 +1,13 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { TreesList } from "@/components/dashboard/trees-list";
 import { CreateTreeDialog } from "@/components/dashboard/create-tree-dialog";
 
 export default async function DashboardPage() {
   const session = await auth();
+  const t = await getTranslations();
 
   if (!session?.user?.id) {
     redirect("/login");
@@ -43,9 +45,9 @@ export default async function DashboardPage() {
     <div className="container py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">My Family Trees</h1>
+          <h1 className="text-3xl font-bold">{t("dashboard.title")}</h1>
           <p className="text-muted-foreground mt-1">
-            Create and manage your family trees
+            {t("dashboard.subtitle")}
           </p>
         </div>
         <CreateTreeDialog />

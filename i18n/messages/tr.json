@@ -1,0 +1,433 @@
+{
+  "common": {
+    "appName": "Soy Ağacı",
+    "loading": "Yükleniyor...",
+    "cancel": "İptal",
+    "save": "Kaydet",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "upload": "Yükle",
+    "uploading": "Yükleniyor...",
+    "done": "Tamam",
+    "close": "Kapat",
+    "back": "Geri",
+    "next": "İleri",
+    "yes": "Evet",
+    "no": "Hayır",
+    "or": "veya",
+    "source": "Kaynak"
+  },
+  "auth": {
+    "signIn": "Giriş Yap",
+    "signOut": "Çıkış Yap",
+    "signInWithGoogle": "Google ile giriş yap",
+    "signInToAccept": "Bu daveti kabul etmek için giriş yapın",
+    "signedInAs": "Giriş yapıldı:",
+    "termsAgreement": "Giriş yaparak Kullanım Şartları ve Gizlilik Politikasını kabul etmiş olursunuz"
+  },
+  "theme": {
+    "toggle": "Tema değiştir",
+    "light": "Açık",
+    "dark": "Koyu",
+    "system": "Sistem"
+  },
+  "treeHeader": {
+    "members": "{count} üye",
+    "share": "Paylaş"
+  },
+  "home": {
+    "goToDashboard": "Panele Git",
+    "heroTitle": "Aile Tarihinizi Koruyun",
+    "heroDescription": "Güzel soy ağaçları oluşturun, anıları fotoğraf ve sesle belgeleyin, mirasınızı sevdiklerinizle paylaşın.",
+    "getStarted": "Başla",
+    "featuresTitle": "Ailenizi belgelemek için ihtiyacınız olan her şey",
+    "features": {
+      "visualTree": {
+        "title": "Görsel Soy Ağacı",
+        "description": "Sürükle-bırak ile interaktif zihin haritası"
+      },
+      "relationships": {
+        "title": "İlişki Haritası",
+        "description": "Üyeler arası renkli bağlantılar"
+      },
+      "sharing": {
+        "title": "Kolay Paylaşım",
+        "description": "WhatsApp veya e-posta ile davet edin"
+      },
+      "photos": {
+        "title": "Fotoğraf Galerisi",
+        "description": "Her aile üyesi için fotoğraf saklayın"
+      },
+      "documents": {
+        "title": "Belgeler ve Bilgiler",
+        "description": "Önemli kayıtları ve hikayeleri koruyun"
+      },
+      "audio": {
+        "title": "Sesli Anılar",
+        "description": "Sesleri ve hikayeleri kaydedin ve koruyun"
+      }
+    },
+    "footer": "Soy Ağacı Uygulaması - Mirasınızı nesiller boyu koruyun"
+  },
+  "login": {
+    "welcome": "Soy Ağacına Hoş Geldiniz",
+    "description": "Soy ağacınızı oluşturmak ve yönetmek için giriş yapın"
+  },
+  "header": {
+    "myTrees": "Ağaçlarım",
+    "settings": "Ayarlar"
+  },
+  "dashboard": {
+    "title": "Soy Ağaçlarım",
+    "subtitle": "Soy ağaçlarınızı oluşturun ve yönetin",
+    "yourTrees": "Sizin Ağaçlarınız",
+    "sharedWithYou": "Sizinle Paylaşılanlar",
+    "members": "{count} üye",
+    "updated": "Güncellendi: {date}",
+    "ownedBy": "Sahibi: {name}",
+    "noTrees": {
+      "title": "Henüz soy ağacı yok",
+      "description": "Aile geçmişinizi ve bağlantılarınızı belgelemeye başlamak için ilk soy ağacınızı oluşturun."
+    },
+    "newTree": "Yeni Ağaç"
+  },
+  "roles": {
+    "owner": "Sahip",
+    "editor": "Düzenleyici",
+    "viewer": "İzleyici"
+  },
+  "createTree": {
+    "title": "Soy Ağacı Oluştur",
+    "description": "Aile tarihinizi belgelemek için yeni bir soy ağacı başlatın.",
+    "nameLabel": "İsim",
+    "namePlaceholder": "örneğin, Yılmaz Ailesi Soy Ağacı",
+    "descriptionLabel": "Açıklama (isteğe bağlı)",
+    "descriptionPlaceholder": "Bu soy ağacı hakkında kısa bir açıklama...",
+    "submit": "Ağaç Oluştur",
+    "errors": {
+      "nameRequired": "Lütfen soy ağacınız için bir isim girin",
+      "failed": "Soy ağacı oluşturulamadı. Lütfen tekrar deneyin."
+    },
+    "success": "Soy ağacı oluşturuldu!"
+  },
+  "addMember": {
+    "title": "Aile Üyesi Ekle",
+    "description": "Soy ağacınıza yeni bir kişi ekleyin.",
+    "firstName": "İsim",
+    "firstNameRequired": "İsim *",
+    "lastName": "Soyisim",
+    "nickname": "Takma Ad",
+    "gender": "Cinsiyet",
+    "genderRequired": "Cinsiyet *",
+    "birthDate": "Doğum Tarihi",
+    "deathDate": "Ölüm Tarihi",
+    "birthPlace": "Doğum Yeri",
+    "deathPlace": "Ölüm Yeri",
+    "occupation": "Meslek",
+    "bio": "Biyografi",
+    "placeholders": {
+      "firstName": "Ahmet",
+      "lastName": "Yılmaz",
+      "nickname": "Memo",
+      "birthPlace": "İstanbul, Türkiye",
+      "occupation": "Öğretmen",
+      "bio": "Kısa bir biyografi..."
+    },
+    "submit": "Üye Ekle",
+    "errors": {
+      "firstNameRequired": "İsim gerekli",
+      "failed": "Aile üyesi eklenemedi. Lütfen tekrar deneyin."
+    },
+    "success": "Aile üyesi eklendi!"
+  },
+  "editMember": {
+    "title": "Aile Üyesini Düzenle",
+    "description": "{name} için bilgileri güncelle",
+    "firstName": "İsim",
+    "lastName": "Soyisim",
+    "nickname": "Takma Ad",
+    "gender": "Cinsiyet",
+    "birthDate": "Doğum Tarihi",
+    "deathDate": "Ölüm Tarihi",
+    "birthPlace": "Doğum Yeri",
+    "deathPlace": "Ölüm Yeri",
+    "occupation": "Meslek",
+    "bio": "Biyografi",
+    "saveChanges": "Değişiklikleri Kaydet",
+    "submit": "Değişiklikleri Kaydet",
+    "errors": {
+      "firstNameRequired": "İsim gerekli",
+      "failed": "Üye güncellenemedi"
+    },
+    "success": "Üye güncellendi"
+  },
+  "gender": {
+    "male": "Erkek",
+    "female": "Kadın",
+    "other": "Diğer",
+    "unknown": "Bilinmiyor"
+  },
+  "relationships": {
+    "title": "İlişki Oluştur",
+    "description": "Bu aile üyeleri arasındaki ilişkiyi tanımlayın.",
+    "typeLabel": "İlişki Türü",
+    "marriageDate": "Evlilik Tarihi",
+    "marriagePartnershipDate": "Evlilik/Birliktelik Tarihi",
+    "submit": "İlişki Oluştur",
+    "errors": {
+      "invalid": "Geçersiz bağlantı",
+      "failed": "İlişki oluşturulamadı"
+    },
+    "success": "İlişki oluşturuldu!",
+    "types": {
+      "parentChild": {
+        "label": "Ebeveyn -> Çocuk",
+        "description": "İlk kişi ebeveyndir"
+      },
+      "spouse": {
+        "label": "Eş",
+        "description": "Evli çiftler"
+      },
+      "partner": {
+        "label": "Partner",
+        "description": "Evli olmayan çiftler"
+      },
+      "exSpouse": {
+        "label": "Eski Eş",
+        "description": "Önceden evli"
+      },
+      "sibling": {
+        "label": "Kardeş",
+        "description": "Erkek/Kız kardeşler"
+      },
+      "halfSibling": {
+        "label": "Üvey Kardeş",
+        "description": "Bir ebeveyni paylaşır"
+      },
+      "stepSibling": {
+        "label": "Üvey Kardeş",
+        "description": "Yeniden evlilik yoluyla"
+      },
+      "adoptiveParent": {
+        "label": "Evlat Edinen Ebeveyn",
+        "description": "Evlat edinme ilişkisi"
+      },
+      "fosterParent": {
+        "label": "Koruyucu Aile",
+        "description": "Koruyucu aile ilişkisi"
+      },
+      "godparent": {
+        "label": "Vaftiz Ebeveyni",
+        "description": "Dini/törensel"
+      }
+    },
+    "labels": {
+      "father": "Baba",
+      "mother": "Anne",
+      "parent": "Ebeveyn",
+      "spouse": "Eş",
+      "partner": "Partner",
+      "exSpouse": "Eski Eş",
+      "brother": "Erkek Kardeş",
+      "sister": "Kız Kardeş",
+      "sibling": "Kardeş",
+      "halfSibling": "Üvey Kardeş",
+      "stepSibling": "Üvey Kardeş",
+      "adoptiveFather": "Evlat Edinen Baba",
+      "adoptiveMother": "Evlat Edinen Anne",
+      "adoptiveParent": "Evlat Edinen Ebeveyn",
+      "fosterFather": "Koruyucu Baba",
+      "fosterMother": "Koruyucu Anne",
+      "fosterParent": "Koruyucu Aile",
+      "godfather": "Vaftiz Babası",
+      "godmother": "Vaftiz Annesi",
+      "godparent": "Vaftiz Ebeveyni",
+      "child": "Çocuk",
+      "son": "Oğul",
+      "daughter": "Kız"
+    }
+  },
+  "settingsPage": {
+    "title": "Ağaç Ayarları",
+    "description": "\"{name}\" için ayarları yönet"
+  },
+  "toolbar": {
+    "addMember": "Aile Üyesi Ekle",
+    "autoLayout": "Otomatik Düzenleme",
+    "zoomIn": "Yakınlaştır",
+    "zoomOut": "Uzaklaştır",
+    "fitView": "Ekrana Sığdır"
+  },
+  "settings": {
+    "general": {
+      "title": "Genel",
+      "description": "Soy ağacınız hakkında temel bilgiler"
+    },
+    "name": "İsim",
+    "description": "Açıklama",
+    "publicTree": "Herkese Açık Ağaç",
+    "publicTreeDescription": "Linke sahip herkesin bu ağacı görüntülemesine izin ver",
+    "saveChanges": "Değişiklikleri Kaydet",
+    "errors": {
+      "nameRequired": "İsim gerekli",
+      "failed": "Ayarlar kaydedilemedi"
+    },
+    "success": "Ayarlar kaydedildi"
+  },
+  "sharing": {
+    "title": "Paylaşım",
+    "description": "Aile üyelerini bu ağacı görüntülemeye veya düzenlemeye davet edin",
+    "createInvite": "Davet Linki Oluştur",
+    "createInviteTitle": "Davet Oluştur",
+    "createInviteDescription": "Aile üyelerini davet etmek için paylaşılabilir bir link oluşturun",
+    "permissionLevel": "İzin Seviyesi",
+    "viewerDescription": "İzleyici - Sadece ağacı görüntüleyebilir",
+    "editorDescription": "Düzenleyici - Üye ekleyebilir ve düzenleyebilir",
+    "shareLink": "Paylaşım Linki",
+    "generateLink": "Link Oluştur",
+    "whatsapp": "WhatsApp",
+    "email": "E-posta",
+    "members": "Üyeler",
+    "pendingInvitations": "Bekleyen Davetler",
+    "anyoneWithLink": "Linke sahip herkes",
+    "expires": "Bitiş: {date}",
+    "success": {
+      "linkCopied": "Link panoya kopyalandı",
+      "inviteDeleted": "Davet silindi"
+    },
+    "errors": {
+      "createFailed": "Davet linki oluşturulamadı",
+      "deleteFailed": "Davet silinemedi"
+    }
+  },
+  "dangerZone": {
+    "title": "Tehlikeli Bölge",
+    "description": "Soy ağacınızı kalıcı olarak etkileyen geri döndürülemez işlemler",
+    "deleteTree": "Bu soy ağacını sil",
+    "deleteTreeDescription": "Tüm üyeleri, fotoğrafları, belgeleri ve verileri kalıcı olarak sil",
+    "deleteButton": "Ağacı Sil",
+    "deleteDialogTitle": "Soy Ağacını Sil",
+    "deleteDialogDescription": "Bu işlem geri alınamaz. Bu, \"{name}\" soy ağacını ve aşağıdakileri içeren tüm ilişkili verileri kalıcı olarak silecektir:",
+    "deleteList": {
+      "members": "Tüm aile üyeleri ve profilleri",
+      "media": "Tüm fotoğraflar, belgeler ve ses dosyaları",
+      "relationships": "Tüm ilişkiler ve bilgiler",
+      "sharing": "Tüm paylaşım ayarları ve davetler"
+    },
+    "confirmPrompt": "Onaylamak için lütfen {name} yazın.",
+    "deleteForever": "Kalıcı Olarak Sil",
+    "deleting": "Siliniyor...",
+    "errors": {
+      "confirmMismatch": "Onaylamak için lütfen ağaç adını doğru yazın",
+      "failed": "Soy ağacı silinemedi"
+    },
+    "success": "Soy ağacı silindi"
+  },
+  "profile": {
+    "backTo": "{name} sayfasına dön",
+    "biography": "Biyografi",
+    "relationships": "İlişkiler",
+    "born": "Doğum: {date}",
+    "bornIn": "Doğum: {date}, {place}",
+    "died": "Ölüm: {date}",
+    "diedIn": "Ölüm: {date}, {place}",
+    "tabs": {
+      "photos": "Fotoğraflar",
+      "documents": "Belgeler",
+      "audio": "Ses",
+      "facts": "Bilgiler"
+    },
+    "photos": {
+      "title": "Fotoğraflar",
+      "empty": "Henüz fotoğraf yok",
+      "deleteTitle": "Fotoğrafı Sil",
+      "deleteDescription": "Bu fotoğrafı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
+    },
+    "documents": {
+      "title": "Belgeler",
+      "empty": "Henüz belge yok",
+      "deleteTitle": "Belgeyi Sil",
+      "deleteDescription": "\"{title}\" belgesini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
+    },
+    "audio": {
+      "title": "Ses Kayıtları",
+      "empty": "Henüz ses kaydı yok",
+      "deleteTitle": "Ses Kaydını Sil",
+      "deleteDescription": "\"{title}\" ses kaydını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+      "notSupported": "Tarayıcınız ses oynatmayı desteklemiyor."
+    },
+    "facts": {
+      "title": "Bilgiler ve Hikayeler",
+      "empty": "Henüz kayıtlı bilgi yok",
+      "addFact": "Bilgi Ekle"
+    },
+    "media": {
+      "deleteSuccess": "Başarıyla silindi",
+      "deleteError": "Silinemedi"
+    }
+  },
+  "addFact": {
+    "title": "Bilgi Ekle",
+    "description": "Bu aile üyesi hakkında bir bilgi, hikaye veya anı kaydedin",
+    "titleLabel": "Başlık *",
+    "titlePlaceholder": "örneğin, İlk iş, Düğün günü, vb.",
+    "contentLabel": "İçerik *",
+    "contentPlaceholder": "Hikayeyi anlatın veya bilgiyi tanımlayın...",
+    "dateLabel": "Tarih",
+    "sourceLabel": "Kaynak",
+    "sourcePlaceholder": "örneğin, Aile albümü, Röportaj",
+    "submit": "Bilgi Ekle",
+    "errors": {
+      "required": "Başlık ve içerik gerekli",
+      "failed": "Bilgi eklenemedi"
+    },
+    "success": "Bilgi eklendi"
+  },
+  "mediaUpload": {
+    "photos": {
+      "title": "Fotoğraf Yükle",
+      "description": "Bu aile üyesi için fotoğraf ekleyin"
+    },
+    "documents": {
+      "title": "Belge Yükle",
+      "description": "Doğum belgesi, mektup vb. belgeler ekleyin"
+    },
+    "audio": {
+      "title": "Ses Yükle",
+      "description": "Hikaye veya anı ses kayıtları ekleyin"
+    },
+    "selectFile": "Dosya seçmek için tıklayın veya sürükleyip bırakın",
+    "titleLabel": "Başlık",
+    "titlePlaceholder": "Bu dosya için bir başlık girin",
+    "errors": {
+      "noFile": "Lütfen bir dosya seçin",
+      "failed": "Yükleme başarısız"
+    },
+    "success": "Dosya başarıyla yüklendi"
+  },
+  "memberModal": {
+    "memberDeleted": "Aile üyesi silindi",
+    "deleteFailed": "Aile üyesi silinemedi",
+    "deleteMember": "Üyeyi Sil",
+    "deleteDialogTitle": "Aile Üyesini Sil",
+    "deleteDialogDescription": "{name} adlı üyeyi silmek istediğinizden emin misiniz? Bu işlem tüm ilişkilerini, fotoğraflarını, belgelerini ve diğer verilerini de silecektir. Bu işlem geri alınamaz."
+  },
+  "invite": {
+    "title": "Soy Ağacı Daveti",
+    "invitedTo": "\"{name}\" ağacına davet edildiniz",
+    "invalid": {
+      "title": "Geçersiz Davet",
+      "description": "Bu davet artık geçerli değil.",
+      "goHome": "Ana Sayfaya Git"
+    },
+    "details": {
+      "familyTree": "Soy Ağacı",
+      "yourRole": "Rolünüz",
+      "expires": "Bitiş"
+    },
+    "accept": "Daveti Kabul Et",
+    "joining": "Katılınıyor...",
+    "success": "Soy ağacına başarıyla katıldınız!",
+    "error": "Davet kabul edilemedi"
+  }
+}

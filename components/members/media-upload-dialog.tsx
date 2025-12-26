@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,20 +27,14 @@ interface MediaUploadDialogProps {
 
 const TYPE_CONFIG = {
   photos: {
-    title: "Upload Photos",
-    description: "Add photos for this family member",
     accept: "image/jpeg,image/png,image/gif,image/webp",
     icon: Image,
   },
   documents: {
-    title: "Upload Documents",
-    description: "Add documents like birth certificates, letters, etc.",
     accept: "application/pdf,.doc,.docx",
     icon: FileText,
   },
   audio: {
-    title: "Upload Audio",
-    description: "Add audio recordings of stories or memories",
     accept: "audio/mpeg,audio/wav,audio/webm,audio/ogg",
     icon: Mic,
   },
@@ -53,6 +48,7 @@ export function MediaUploadDialog({
   onOpenChange,
 }: MediaUploadDialogProps) {
   const router = useRouter();
+  const t = useTranslations("mediaUpload");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -75,7 +71,7 @@ export function MediaUploadDialog({
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      toast.error("Please select a file");
+      toast.error(t("errors.selectFile"));
       return;
     }
 
@@ -100,13 +96,13 @@ export function MediaUploadDialog({
         throw new Error(data.error || "Upload failed");
       }
 
-      toast.success("File uploaded successfully");
+      toast.success(t("success"));
       setSelectedFile(null);
       setTitle("");
       onOpenChange(false);
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Upload failed");
+      toast.error(error instanceof Error ? error.message : t("errors.failed"));
     } finally {
       setLoading(false);
     }
@@ -122,8 +118,8 @@ export function MediaUploadDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{config.title}</DialogTitle>
-          <DialogDescription>{config.description}</DialogDescription>
+          <DialogTitle>{t(`types.${type}.title`)}</DialogTitle>
+          <DialogDescription>{t(`types.${type}.description`)}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -142,7 +138,7 @@ export function MediaUploadDialog({
             >
               <Icon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-sm text-muted-foreground">
-                Click to select a file or drag and drop
+                {t("dropzone")}
               </p>
             </div>
           ) : (
@@ -165,12 +161,12 @@ export function MediaUploadDialog({
           )}
 
           <div className="grid gap-2">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title">{t("fileTitle")}</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter a title for this file"
+              placeholder={t("fileTitlePlaceholder")}
               disabled={loading}
             />
           </div>
@@ -178,18 +174,18 @@ export function MediaUploadDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose} disabled={loading}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button onClick={handleUpload} disabled={!selectedFile || loading}>
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Uploading...
+                {t("uploading")}
               </>
             ) : (
               <>
                 <Upload className="h-4 w-4 mr-2" />
-                Upload
+                {t("upload")}
               </>
             )}
           </Button>

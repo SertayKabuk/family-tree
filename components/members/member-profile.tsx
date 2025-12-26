@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,11 +34,12 @@ import {
   Gender,
 } from "@prisma/client";
 import { GENDER_COLORS } from "@/lib/tree-colors";
-import { getRelationshipLabel } from "@/lib/tree-colors";
+import { useRelationshipLabels } from "@/lib/use-relationship-labels";
 import { MediaUploadDialog } from "@/components/members/media-upload-dialog";
 import { AddFactDialog } from "@/components/members/add-fact-dialog";
 import { EditMemberDialog } from "@/components/members/edit-member-dialog";
 import { ProfilePhotoUpload } from "@/components/members/profile-photo-upload";
+import { PhotoGallery } from "@/components/ui/photo-gallery";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,6 +74,9 @@ interface MemberProfileProps {
 
 export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfileProps) {
   const router = useRouter();
+  const t = useTranslations();
+  const locale = useLocale();
+  const { getRelationshipLabel } = useRelationshipLabels();
   const colors = GENDER_COLORS[member.gender];
   const initials = `${member.firstName[0]}${member.lastName?.[0] || ""}`.toUpperCase();
   const fullName = `${member.firstName}${member.lastName ? ` ${member.lastName}` : ""}`;
@@ -95,30 +100,30 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
         throw new Error("Failed to delete");
       }
 
-      toast.success("Deleted successfully");
+      toast.success(t("profile.media.deleteSuccess"));
       router.refresh();
     } catch {
-      toast.error("Failed to delete");
+      toast.error(t("profile.media.deleteError"));
     } finally {
       setDeletingMedia(null);
     }
   };
 
   const formatDate = (date: Date | null) => {
-    if (!date) return null;
-    return new Date(date).toLocaleDateString("en-US", {
+    if (!date) return "";
+    return new Date(date).toLocaleDateString(locale, {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
   };
 
-  const genderLabel = {
-    MALE: "Male",
-    FEMALE: "Female",
-    OTHER: "Other",
-    UNKNOWN: "Unknown",
-  }[member.gender];
+  const genderLabels: Record<Gender, string> = {
+    MALE: t("gender.male"),
+    FEMALE: t("gender.female"),
+    OTHER: t("gender.other"),
+    UNKNOWN: t("gender.unknown"),
+  };
 
   // Combine relationships for display
   const allRelationships = [
@@ -143,7 +148,7 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
         <Link href={`/trees/${treeId}`}>
           <Button variant="ghost" size="sm">
             <ChevronLeft className="h-4 w-4 mr-1" />
-            Back to {treeName}
+            {t("profile.backTo", { name: treeName })}
           </Button>
         </Link>
       </div>
@@ -193,14 +198,14 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
                     className="mt-2"
                     style={{ backgroundColor: colors.background, color: colors.text }}
                   >
-                    {genderLabel}
+                    {genderLabels[member.gender]}
                   </Badge>
                 </div>
 
                 {canEdit && (
                   <Button variant="outline" size="sm" onClick={() => setEditMemberOpen(true)}>
                     <Edit className="h-4 w-4 mr-2" />
-                    Edit
+                    {t("common.edit")}
                   </Button>
                 )}
               </div>
@@ -210,8 +215,9 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
                   <div className="flex items-center gap-2 justify-center sm:justify-start">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span>
-                      Born {formatDate(member.birthDate)}
-                      {member.birthPlace && ` in ${member.birthPlace}`}
+                      {member.birthPlace
+                        ? t("profile.bornIn", { date: formatDate(member.birthDate), place: member.birthPlace })
+                        : t("profile.born", { date: formatDate(member.birthDate) })}
                     </span>
                   </div>
                 )}
@@ -219,8 +225,9 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
                   <div className="flex items-center gap-2 justify-center sm:justify-start">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span>
-                      Died {formatDate(member.deathDate)}
-                      {member.deathPlace && ` in ${member.deathPlace}`}
+                      {member.deathPlace
+                        ? t("profile.diedIn", { date: formatDate(member.deathDate), place: member.deathPlace })
+                        : t("profile.died", { date: formatDate(member.deathDate) })}
                     </span>
                   </div>
                 )}
@@ -238,7 +245,7 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
             <>
               <Separator className="my-6" />
               <div>
-                <h3 className="font-semibold mb-2">Biography</h3>
+                <h3 className="font-semibold mb-2">{t("profile.biography")}</h3>
                 <p className="text-muted-foreground whitespace-pre-wrap">{member.bio}</p>
               </div>
             </>
@@ -249,7 +256,7 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
             <>
               <Separator className="my-6" />
               <div>
-                <h3 className="font-semibold mb-3">Relationships</h3>
+                <h3 className="font-semibold mb-3">{t("profile.relationships")}</h3>
                 <div className="flex flex-wrap gap-2">
                   {allRelationships.map((rel, i) => (
                     <Link
@@ -273,22 +280,22 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="photos" className="gap-2">
             <Camera className="h-4 w-4" />
-            <span className="hidden sm:inline">Photos</span>
+            <span className="hidden sm:inline">{t("profile.tabs.photos")}</span>
             <Badge variant="secondary" className="ml-1">{member.photos.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="documents" className="gap-2">
             <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Documents</span>
+            <span className="hidden sm:inline">{t("profile.tabs.documents")}</span>
             <Badge variant="secondary" className="ml-1">{member.documents.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="audio" className="gap-2">
             <Mic className="h-4 w-4" />
-            <span className="hidden sm:inline">Audio</span>
+            <span className="hidden sm:inline">{t("profile.tabs.audio")}</span>
             <Badge variant="secondary" className="ml-1">{member.audioClips.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="facts" className="gap-2">
             <Info className="h-4 w-4" />
-            <span className="hidden sm:inline">Facts</span>
+            <span className="hidden sm:inline">{t("profile.tabs.facts")}</span>
             <Badge variant="secondary" className="ml-1">{member.facts.length}</Badge>
           </TabsTrigger>
         </TabsList>
@@ -296,71 +303,25 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
         <TabsContent value="photos">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Photos</CardTitle>
+              <CardTitle>{t("profile.photos.title")}</CardTitle>
               {canEdit && (
                 <Button size="sm" onClick={() => setUploadType("photos")}>
                   <Upload className="h-4 w-4 mr-2" />
-                  Upload
+                  {t("common.upload")}
                 </Button>
               )}
             </CardHeader>
             <CardContent>
-              {member.photos.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  No photos yet
-                </p>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {member.photos.map((photo) => (
-                    <div key={photo.id} className="aspect-square rounded-lg overflow-hidden bg-muted relative group">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`/api/files/${photo.filePath}`}
-                        alt={photo.title || "Photo"}
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                      {canEdit && (
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <AlertDialog>
-                            <AlertDialogTrigger
-                              render={
-                                <Button
-                                  size="icon"
-                                  variant="destructive"
-                                  disabled={deletingMedia === photo.id}
-                                />
-                              }
-                            >
-                              {deletingMedia === photo.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Photo</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete this photo? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteMedia("photo", photo.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+              <PhotoGallery
+                photos={member.photos.map((photo) => ({
+                  id: photo.id,
+                  src: `/api/files/${photo.filePath}`,
+                  title: photo.title,
+                }))}
+                canEdit={canEdit}
+                onDelete={(id) => deleteMedia("photo", id)}
+                deletingId={deletingMedia}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -368,18 +329,18 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
         <TabsContent value="documents">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Documents</CardTitle>
+              <CardTitle>{t("profile.documents.title")}</CardTitle>
               {canEdit && (
                 <Button size="sm" onClick={() => setUploadType("documents")}>
                   <Upload className="h-4 w-4 mr-2" />
-                  Upload
+                  {t("common.upload")}
                 </Button>
               )}
             </CardHeader>
             <CardContent>
               {member.documents.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  No documents yet
+                  {t("profile.documents.empty")}
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -422,18 +383,18 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Document</AlertDialogTitle>
+                              <AlertDialogTitle>{t("profile.documents.deleteTitle")}</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete &ldquo;{doc.title}&rdquo;? This action cannot be undone.
+                                {t("profile.documents.deleteDescription", { title: doc.title })}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => deleteMedia("document", doc.id)}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
-                                Delete
+                                {t("common.delete")}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -450,18 +411,18 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
         <TabsContent value="audio">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Audio Clips</CardTitle>
+              <CardTitle>{t("profile.audio.title")}</CardTitle>
               {canEdit && (
                 <Button size="sm" onClick={() => setUploadType("audio")}>
                   <Upload className="h-4 w-4 mr-2" />
-                  Upload
+                  {t("common.upload")}
                 </Button>
               )}
             </CardHeader>
             <CardContent>
               {member.audioClips.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  No audio clips yet
+                  {t("profile.audio.empty")}
                 </p>
               ) : (
                 <div className="space-y-4">
@@ -489,18 +450,18 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Audio Clip</AlertDialogTitle>
+                                <AlertDialogTitle>{t("profile.audio.deleteTitle")}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete &ldquo;{clip.title}&rdquo;? This action cannot be undone.
+                                  {t("profile.audio.deleteDescription", { title: clip.title })}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => deleteMedia("audio", clip.id)}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
-                                  Delete
+                                  {t("common.delete")}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -509,7 +470,7 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
                       </div>
                       <audio controls className="w-full">
                         <source src={`/api/files/${clip.filePath}`} />
-                        Your browser does not support audio playback.
+                        {t("profile.audio.notSupported")}
                       </audio>
                     </div>
                   ))}
@@ -522,18 +483,18 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
         <TabsContent value="facts">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Facts & Stories</CardTitle>
+              <CardTitle>{t("profile.facts.title")}</CardTitle>
               {canEdit && (
                 <Button size="sm" onClick={() => setAddFactOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Fact
+                  {t("profile.facts.addFact")}
                 </Button>
               )}
             </CardHeader>
             <CardContent>
               {member.facts.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  No facts recorded yet
+                  {t("profile.facts.empty")}
                 </p>
               ) : (
                 <div className="space-y-4">
@@ -550,7 +511,7 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
                       </p>
                       {fact.source && (
                         <p className="text-xs text-muted-foreground mt-2">
-                          Source: {fact.source}
+                          {t("common.source")}: {fact.source}
                         </p>
                       )}
                     </div>

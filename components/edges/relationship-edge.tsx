@@ -9,7 +9,8 @@ import {
   Edge,
 } from "@xyflow/react";
 import { RelationshipType, Gender } from "@prisma/client";
-import { RELATIONSHIP_COLORS, getRelationshipLabel } from "@/lib/tree-colors";
+import { RELATIONSHIP_COLORS } from "@/lib/tree-colors";
+import { useRelationshipLabels } from "@/lib/use-relationship-labels";
 
 export interface RelationshipEdgeData extends Record<string, unknown> {
   type: RelationshipType;
@@ -33,6 +34,8 @@ function RelationshipEdgeComponent({
   data,
   selected,
 }: EdgeProps<RelationshipEdge>) {
+  const { getRelationshipLabel } = useRelationshipLabels();
+  
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,

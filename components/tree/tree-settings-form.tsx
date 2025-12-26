@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +19,7 @@ interface TreeSettingsFormProps {
 
 export function TreeSettingsForm({ tree }: TreeSettingsFormProps) {
   const router = useRouter();
+  const t = useTranslations();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState(tree.name);
   const [description, setDescription] = useState(tree.description || "");
@@ -27,7 +29,7 @@ export function TreeSettingsForm({ tree }: TreeSettingsFormProps) {
     e.preventDefault();
 
     if (!name.trim()) {
-      toast.error("Name is required");
+      toast.error(t("settings.errors.nameRequired"));
       return;
     }
 
@@ -48,10 +50,10 @@ export function TreeSettingsForm({ tree }: TreeSettingsFormProps) {
         throw new Error("Failed to update tree");
       }
 
-      toast.success("Settings saved");
+      toast.success(t("settings.success"));
       router.refresh();
     } catch {
-      toast.error("Failed to save settings");
+      toast.error(t("settings.errors.failed"));
     } finally {
       setLoading(false);
     }
@@ -60,13 +62,13 @@ export function TreeSettingsForm({ tree }: TreeSettingsFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>General</CardTitle>
-        <CardDescription>Basic information about your family tree</CardDescription>
+        <CardTitle>{t("settings.general.title")}</CardTitle>
+        <CardDescription>{t("settings.general.description")}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">{t("settings.name")}</Label>
             <Input
               id="name"
               value={name}
@@ -76,7 +78,7 @@ export function TreeSettingsForm({ tree }: TreeSettingsFormProps) {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t("settings.description")}</Label>
             <Textarea
               id="description"
               value={description}
@@ -88,9 +90,9 @@ export function TreeSettingsForm({ tree }: TreeSettingsFormProps) {
 
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
-              <Label htmlFor="public">Public Tree</Label>
+              <Label htmlFor="public">{t("settings.publicTree")}</Label>
               <p className="text-sm text-muted-foreground">
-                Allow anyone with the link to view this tree
+                {t("settings.publicTreeDescription")}
               </p>
             </div>
             <Switch
@@ -103,7 +105,7 @@ export function TreeSettingsForm({ tree }: TreeSettingsFormProps) {
 
           <Button type="submit" disabled={loading}>
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Save Changes
+            {t("settings.saveChanges")}
           </Button>
         </form>
       </CardContent>

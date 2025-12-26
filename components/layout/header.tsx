@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import { useTranslations } from "next-intl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { TreePine, LogOut, Settings } from "lucide-react";
 
 interface HeaderProps {
@@ -24,6 +26,7 @@ interface HeaderProps {
 }
 
 export function Header({ user }: HeaderProps) {
+  const t = useTranslations();
   const initials = user.name
     ?.split(" ")
     .map((n) => n[0])
@@ -35,7 +38,7 @@ export function Header({ user }: HeaderProps) {
       <div className="container flex h-14 items-center">
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
           <TreePine className="h-6 w-6 text-primary" />
-          <span>Family Tree</span>
+          <span>{t("common.appName")}</span>
         </Link>
 
         <nav className="ml-6 flex items-center gap-4 text-sm">
@@ -43,11 +46,12 @@ export function Header({ user }: HeaderProps) {
             href="/dashboard"
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
-            My Trees
+            {t("header.myTrees")}
           </Link>
         </nav>
 
         <div className="ml-auto flex items-center gap-4">
+          <LanguageSwitcher />
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button variant="ghost" className="relative h-8 w-8 rounded-full" />}>
@@ -70,7 +74,7 @@ export function Header({ user }: HeaderProps) {
               <DropdownMenuSeparator />
               <DropdownMenuItem render={<Link href="/settings" />}>
                 <Settings className="mr-2 h-4 w-4" />
-                Settings
+                {t("header.settings")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -78,7 +82,7 @@ export function Header({ user }: HeaderProps) {
                 onSelect={() => signOut({ callbackUrl: "/" })}
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Log out
+                {t("auth.signOut")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

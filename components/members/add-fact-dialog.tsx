@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,6 +32,8 @@ export function AddFactDialog({
   onOpenChange,
 }: AddFactDialogProps) {
   const router = useRouter();
+  const t = useTranslations();
+  const tFact = useTranslations("addFact");
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -48,7 +51,7 @@ export function AddFactDialog({
     e.preventDefault();
 
     if (!title.trim() || !content.trim()) {
-      toast.error("Title and content are required");
+      toast.error(tFact("errors.required"));
       return;
     }
 
@@ -73,12 +76,12 @@ export function AddFactDialog({
         throw new Error("Failed to add fact");
       }
 
-      toast.success("Fact added");
+      toast.success(tFact("success"));
       resetForm();
       onOpenChange(false);
       router.refresh();
     } catch {
-      toast.error("Failed to add fact");
+      toast.error(tFact("errors.failed"));
     } finally {
       setLoading(false);
     }
@@ -92,31 +95,31 @@ export function AddFactDialog({
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Add Fact</DialogTitle>
+            <DialogTitle>{tFact("title")}</DialogTitle>
             <DialogDescription>
-              Record a fact, story, or memory about this family member
+              {tFact("description")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="fact-title">Title *</Label>
+              <Label htmlFor="fact-title">{tFact("titleLabel")}</Label>
               <Input
                 id="fact-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., First job, Wedding day, etc."
+                placeholder={tFact("titlePlaceholder")}
                 disabled={loading}
               />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="fact-content">Content *</Label>
+              <Label htmlFor="fact-content">{tFact("contentLabel")}</Label>
               <Textarea
                 id="fact-content"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Tell the story or describe the fact..."
+                placeholder={tFact("contentPlaceholder")}
                 rows={4}
                 disabled={loading}
               />
@@ -124,7 +127,7 @@ export function AddFactDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="fact-date">Date</Label>
+                <Label htmlFor="fact-date">{tFact("dateLabel")}</Label>
                 <Input
                   id="fact-date"
                   type="date"
@@ -134,12 +137,12 @@ export function AddFactDialog({
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="fact-source">Source</Label>
+                <Label htmlFor="fact-source">{tFact("sourceLabel")}</Label>
                 <Input
                   id="fact-source"
                   value={source}
                   onChange={(e) => setSource(e.target.value)}
-                  placeholder="e.g., Family album, Interview"
+                  placeholder={tFact("sourcePlaceholder")}
                   disabled={loading}
                 />
               </div>
@@ -148,11 +151,11 @@ export function AddFactDialog({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Add Fact
+              {tFact("submit")}
             </Button>
           </DialogFooter>
         </form>

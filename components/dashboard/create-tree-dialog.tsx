@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +21,7 @@ import { toast } from "sonner";
 
 export function CreateTreeDialog() {
   const router = useRouter();
+  const t = useTranslations();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
@@ -29,7 +31,7 @@ export function CreateTreeDialog() {
     e.preventDefault();
 
     if (!name.trim()) {
-      toast.error("Please enter a name for your family tree");
+      toast.error(t("createTree.errors.nameRequired"));
       return;
     }
 
@@ -47,14 +49,14 @@ export function CreateTreeDialog() {
       }
 
       const tree = await response.json();
-      toast.success("Family tree created!");
+      toast.success(t("createTree.success"));
       setOpen(false);
       setName("");
       setDescription("");
       router.push(`/trees/${tree.id}`);
       router.refresh();
     } catch {
-      toast.error("Failed to create family tree. Please try again.");
+      toast.error(t("createTree.errors.failed"));
     } finally {
       setLoading(false);
     }
@@ -64,32 +66,32 @@ export function CreateTreeDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button />}>
         <Plus className="h-4 w-4 mr-2" />
-        New Tree
+        {t("dashboard.newTree")}
       </DialogTrigger>
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create Family Tree</DialogTitle>
+            <DialogTitle>{t("createTree.title")}</DialogTitle>
             <DialogDescription>
-              Start a new family tree to document your family history.
+              {t("createTree.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">{t("createTree.nameLabel")}</Label>
               <Input
                 id="name"
-                placeholder="e.g., Smith Family Tree"
+                placeholder={t("createTree.namePlaceholder")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={loading}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="description">Description (optional)</Label>
+              <Label htmlFor="description">{t("createTree.descriptionLabel")}</Label>
               <Textarea
                 id="description"
-                placeholder="A brief description of this family tree..."
+                placeholder={t("createTree.descriptionPlaceholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 disabled={loading}
@@ -104,11 +106,11 @@ export function CreateTreeDialog() {
               onClick={() => setOpen(false)}
               disabled={loading}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Create Tree
+              {t("createTree.submit")}
             </Button>
           </DialogFooter>
         </form>
