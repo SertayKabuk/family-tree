@@ -429,5 +429,23 @@
     "joining": "Katılınıyor...",
     "success": "Soy ağacına başarıyla katıldınız!",
     "error": "Davet kabul edilemedi"
+  },
+  "userSettings": {
+    "title": "Ayarlar",
+    "description": "Hesap tercihlerinizi yönetin",
+    "appearance": {
+      "title": "Görünüm",
+      "description": "Uygulamanın görünümünü özelleştirin",
+      "theme": "Tema",
+      "themeDescription": "Tercih ettiğiniz temayı seçin",
+      "language": "Dil",
+      "languageDescription": "Tercih ettiğiniz dili seçin"
+    },
+    "account": {
+      "title": "Hesap",
+      "description": "Hesap bilgileriniz",
+      "name": "Ad",
+      "email": "E-posta"
+    }
   }
 }

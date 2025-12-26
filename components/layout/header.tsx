@@ -79,7 +79,7 @@ export function Header({ user }: HeaderProps) {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="cursor-pointer text-destructive focus:text-destructive"
-                onSelect={() => signOut({ callbackUrl: "/" })}
+                onClick={() => signOut({ callbackUrl: "/" })}
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 {t("auth.signOut")}

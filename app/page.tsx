@@ -4,6 +4,8 @@ import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TreePine, Users, Share2, Image as ImageIcon, FileText, Mic } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 
 export default async function HomePage() {
   const session = await auth();
@@ -18,7 +20,9 @@ export default async function HomePage() {
             <TreePine className="h-6 w-6 text-primary" />
             <span className="font-semibold text-lg">{t("common.appName")}</span>
           </div>
-          <nav>
+          <nav className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <ThemeToggle />
             {session?.user ? (
               <Link href="/dashboard">
                 <Button>{t("home.goToDashboard")}</Button>

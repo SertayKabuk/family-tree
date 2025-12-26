@@ -429,5 +429,23 @@
     "joining": "Joining...",
     "success": "Successfully joined the family tree!",
     "error": "Failed to accept invitation"
+  },
+  "userSettings": {
+    "title": "Settings",
+    "description": "Manage your account preferences",
+    "appearance": {
+      "title": "Appearance",
+      "description": "Customize how the app looks",
+      "theme": "Theme",
+      "themeDescription": "Select your preferred theme",
+      "language": "Language",
+      "languageDescription": "Select your preferred language"
+    },
+    "account": {
+      "title": "Account",
+      "description": "Your account information",
+      "name": "Name",
+      "email": "Email"
+    }
   }
 }
