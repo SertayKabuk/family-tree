@@ -179,6 +179,13 @@
       "failed": "Failed to create relationship"
     },
     "success": "Relationship created!",
+    "delete": {
+      "title": "Delete Relationship",
+      "description": "Are you sure you want to delete this relationship? This action cannot be undone.",
+      "confirm": "Delete",
+      "success": "Relationship deleted",
+      "error": "Failed to delete relationship"
+    },
     "types": {
       "parentChild": {
         "label": "Parent -> Child",

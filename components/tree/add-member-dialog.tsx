@@ -161,7 +161,12 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
                   disabled={loading}
                 >
                   <SelectTrigger id="gender">
-                    <SelectValue />
+                    <SelectValue>
+                      {formData.gender === "MALE" && t("gender.male")}
+                      {formData.gender === "FEMALE" && t("gender.female")}
+                      {formData.gender === "OTHER" && t("gender.other")}
+                      {formData.gender === "UNKNOWN" && t("gender.unknown")}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="MALE">{t("gender.male")}</SelectItem>

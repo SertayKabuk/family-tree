@@ -19,7 +19,8 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import { FamilyMember, Relationship } from "@prisma/client";
+import { useTranslations } from "next-intl";
+import { FamilyMember, Relationship, RelationshipType } from "@prisma/client";
 import { FamilyMemberNode, FamilyMemberNodeData } from "@/components/nodes/family-member-node";
 import { RelationshipEdge, RelationshipEdgeData } from "@/components/edges/relationship-edge";
 import { TreeToolbar } from "@/components/tree/tree-toolbar";
@@ -69,7 +70,9 @@ function transformMembersToNodes(members: FamilyMember[]): Node<FamilyMemberNode
 
 function transformRelationshipsToEdges(
   relationships: Relationship[],
-  members: FamilyMember[]
+  members: FamilyMember[],
+  canEdit: boolean,
+  onDelete?: (edgeId: string, fromMemberId: string, toMemberId: string, type: RelationshipType) => void
 ): Edge<RelationshipEdgeData>[] {
   const memberMap = new Map(members.map((m) => [m.id, m]));
 
@@ -100,6 +103,8 @@ function transformRelationshipsToEdges(
         marriageDate: rel.marriageDate?.toISOString() ?? null,
         divorceDate: rel.divorceDate?.toISOString() ?? null,
         customColor: rel.customColor,
+        canEdit,
+        onDelete,
       },
     };
   });
@@ -112,11 +117,13 @@ function FamilyTreeCanvasInner({
   canEdit,
 }: FamilyTreeCanvasProps) {
   const { fitView } = useReactFlow();
+  const t = useTranslations();
 
   const initialNodes = useMemo(() => transformMembersToNodes(members), [members]);
+  // Initially create edges without the delete handler - we'll add it via useEffect
   const initialEdges = useMemo(
-    () => transformRelationshipsToEdges(relationships, members),
-    [relationships, members]
+    () => transformRelationshipsToEdges(relationships, members, canEdit),
+    [relationships, members, canEdit]
   );
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -128,11 +135,36 @@ function FamilyTreeCanvasInner({
   const [addRelationshipOpen, setAddRelationshipOpen] = useState(false);
   const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
 
+  // Handle relationship deletion
+  const handleDeleteRelationship = useCallback(
+    async (edgeId: string, fromMemberId: string, toMemberId: string, type: RelationshipType) => {
+      try {
+        const response = await fetch(`/api/trees/${treeId}/relationships`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fromMemberId, toMemberId, type }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to delete");
+        }
+
+        // Remove edge from local state immediately
+        setEdges((eds) => eds.filter((e) => e.id !== edgeId));
+        toast.success(t("relationships.delete.success"));
+      } catch (error) {
+        console.error("Failed to delete relationship:", error);
+        toast.error(t("relationships.delete.error"));
+      }
+    },
+    [treeId, setEdges, t]
+  );
+
   // Update nodes/edges when data changes
   useEffect(() => {
     setNodes(transformMembersToNodes(members));
-    setEdges(transformRelationshipsToEdges(relationships, members));
-  }, [members, relationships, setNodes, setEdges]);
+    setEdges(transformRelationshipsToEdges(relationships, members, canEdit, handleDeleteRelationship));
+  }, [members, relationships, setNodes, setEdges, canEdit, handleDeleteRelationship]);
 
   // Handle node click to show member details
   const onNodeClick = useCallback(

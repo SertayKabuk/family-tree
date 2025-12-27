@@ -179,6 +179,13 @@
       "failed": "İlişki oluşturulamadı"
     },
     "success": "İlişki oluşturuldu!",
+    "delete": {
+      "title": "İlişkiyi Sil",
+      "description": "Bu ilişkiyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+      "confirm": "Sil",
+      "success": "İlişki silindi",
+      "error": "İlişki silinemedi"
+    },
     "types": {
       "parentChild": {
         "label": "Ebeveyn -> Çocuk",
