@@ -65,6 +65,9 @@ COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY scripts/start.sh ./start.sh
 RUN chmod +x ./start.sh
 
+# Create uploads directory with correct permissions
+RUN mkdir -p /app/uploads && chown -R nextjs:nodejs /app/uploads
+
 # Set correct permissions
 RUN chown -R nextjs:nodejs /app
 
