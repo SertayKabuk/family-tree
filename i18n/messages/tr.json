@@ -174,6 +174,15 @@
     "marriageDate": "Evlilik Tarihi",
     "marriagePartnershipDate": "Evlilik/Birliktelik Tarihi",
     "submit": "İlişki Oluştur",
+    "children": "çocuk",
+    "otherParent": {
+      "label": "Diğer Ebeveyn",
+      "placeholder": "Diğer ebeveyni seçin (isteğe bağlı)",
+      "none": "Diğer ebeveyn yok / Tek ebeveyn",
+      "existing": "Diğer ebeveyn zaten tanımlı",
+      "noSpouse": "Eş/partner bulunamadı. Diğer ebeveyni seçmek için önce eş ilişkisi ekleyin.",
+      "hint": "Bu çocuğun iki ebeveyni varsa diğer ebeveyni seçin. Tek ebeveynli aileler için boş bırakın."
+    },
     "errors": {
       "invalid": "Geçersiz bağlantı",
       "failed": "İlişki oluşturulamadı"
@@ -182,6 +191,13 @@
     "delete": {
       "title": "İlişkiyi Sil",
       "description": "Bu ilişkiyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+      "spouseDescription": "Bu ilişkiyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+      "childDescription": "Bu çocuğu aile grubundan çıkarmak istediğinizden emin misiniz? Bu, bu çocuğun tüm ebeveyn-çocuk ilişkilerini silecektir.",
+      "childDescriptionNamed": "{name} adlı üyeyi aile grubundan çıkarmak istediğinizden emin misiniz? Tüm ebeveyn-çocuk ilişkileri silinecektir.",
+      "sharedChildren": "{name}, {count, plural, one {# çocuğun} other {# çocuğun}} ebeveyni olarak kayıtlı:",
+      "cascadeOption": "{name} ile bu çocuklar arasındaki ebeveyn bağlantılarını da sil",
+      "theSpouse": "bu kişi",
+      "removeChild": "{name} adlı ilişkiyi sil",
       "confirm": "Sil",
       "success": "İlişki silindi",
       "error": "İlişki silinemedi"

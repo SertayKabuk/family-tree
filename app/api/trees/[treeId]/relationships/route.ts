@@ -7,7 +7,7 @@ import { RelationshipType } from "@prisma/client";
 const createRelationshipSchema = z.object({
   fromMemberId: z.string(),
   toMemberId: z.string(),
-  type: z.nativeEnum(RelationshipType),
+  type: z.enum(RelationshipType),
   marriageDate: z.string().nullable().optional(),
   divorceDate: z.string().nullable().optional(),
   customColor: z.string().nullable().optional(),
@@ -16,7 +16,7 @@ const createRelationshipSchema = z.object({
 const deleteRelationshipSchema = z.object({
   fromMemberId: z.string(),
   toMemberId: z.string(),
-  type: z.nativeEnum(RelationshipType),
+  type: z.enum(RelationshipType),
 });
 
 // GET /api/trees/[treeId]/relationships - List all relationships

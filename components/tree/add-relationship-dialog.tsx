@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { FamilyMember, RelationshipType } from "@prisma/client";
+import { FamilyMember, RelationshipType, Relationship } from "@prisma/client";
 import { Connection } from "@xyflow/react";
 
 interface AddRelationshipDialogProps {
@@ -26,6 +26,7 @@ interface AddRelationshipDialogProps {
   onOpenChange: (open: boolean) => void;
   connection: Connection | null;
   members: FamilyMember[];
+  relationships?: Relationship[];
   onClose: () => void;
 }
 
@@ -35,6 +36,7 @@ export function AddRelationshipDialog({
   onOpenChange,
   connection,
   members,
+  relationships = [],
   onClose,
 }: AddRelationshipDialogProps) {
   const router = useRouter();
@@ -42,9 +44,56 @@ export function AddRelationshipDialog({
   const [loading, setLoading] = useState(false);
   const [relationshipType, setRelationshipType] = useState<RelationshipType>("PARENT_CHILD");
   const [marriageDate, setMarriageDate] = useState("");
+  const [otherParentId, setOtherParentId] = useState<string | null>(null);
 
   const fromMember = members.find((m) => m.id === connection?.source);
   const toMember = members.find((m) => m.id === connection?.target);
+
+  // Check if we're creating a parent-child relationship
+  const isParentChildType = relationshipType === "PARENT_CHILD" || 
+    relationshipType === "ADOPTIVE_PARENT" || 
+    relationshipType === "FOSTER_PARENT";
+
+  // Find potential other parents (spouses/partners of the parent)
+  const potentialOtherParents = useMemo(() => {
+    if (!fromMember || !isParentChildType) return [];
+    
+    // Find all spouse/partner relationships of the "from" member (parent)
+    const spouseRelations = relationships.filter(
+      (r) => 
+        (r.type === "SPOUSE" || r.type === "PARTNER") &&
+        (r.fromMemberId === fromMember.id || r.toMemberId === fromMember.id)
+    );
+    
+    // Get the spouse/partner member IDs
+    const spouseIds = spouseRelations.map((r) => 
+      r.fromMemberId === fromMember.id ? r.toMemberId : r.fromMemberId
+    );
+    
+    // Return the actual member objects (excluding the child being added)
+    return members.filter(
+      (m) => spouseIds.includes(m.id) && m.id !== toMember?.id
+    );
+  }, [fromMember, toMember, isParentChildType, relationships, members]);
+
+  // Find existing other parent from existing relationships
+  const existingOtherParent = useMemo(() => {
+    if (!toMember || !isParentChildType) return null;
+    
+    // Check if child already has parent relationships
+    const existingParentRels = relationships.filter(
+      (r) => 
+        (r.type === "PARENT_CHILD" || r.type === "ADOPTIVE_PARENT" || r.type === "FOSTER_PARENT") &&
+        r.toMemberId === toMember.id &&
+        r.fromMemberId !== fromMember?.id
+    );
+    
+    if (existingParentRels.length > 0) {
+      const otherParent = members.find((m) => m.id === existingParentRels[0].fromMemberId);
+      return otherParent || null;
+    }
+    return null;
+  }, [toMember, fromMember, isParentChildType, relationships, members]);
 
   const relationshipOptions: { value: RelationshipType; labelKey: string; descKey: string }[] = [
     { value: "PARENT_CHILD", labelKey: "relationships.types.parentChild.label", descKey: "relationships.types.parentChild.description" },
@@ -63,6 +112,7 @@ export function AddRelationshipDialog({
     if (!open) {
       setRelationshipType("PARENT_CHILD");
       setMarriageDate("");
+      setOtherParentId(null);
     }
   }, [open]);
 
@@ -77,20 +127,51 @@ export function AddRelationshipDialog({
     setLoading(true);
 
     try {
-      const response = await fetch(`/api/trees/${treeId}/relationships`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      // Build relationships array - includes both parents if otherParentId is set
+      const relationshipsToCreate = [
+        {
           fromMemberId: connection.source,
           toMemberId: connection.target,
           type: relationshipType,
           marriageDate: marriageDate || null,
-        }),
-      });
+        },
+      ];
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || t("relationships.errors.failed"));
+      // If it's a parent-child relationship and we have another parent selected,
+      // add the second parent-child relationship to the batch
+      if (isParentChildType && otherParentId) {
+        relationshipsToCreate.push({
+          fromMemberId: otherParentId,
+          toMemberId: connection.target,
+          type: relationshipType, // Preserve the same relationship type (PARENT_CHILD/ADOPTIVE_PARENT/FOSTER_PARENT)
+          marriageDate: null,
+        });
+      }
+
+      // Use batch endpoint if multiple relationships, otherwise single endpoint
+      if (relationshipsToCreate.length > 1) {
+        const response = await fetch(`/api/trees/${treeId}/relationships/batch`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ relationships: relationshipsToCreate }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || t("relationships.errors.failed"));
+        }
+      } else {
+        // Single relationship - use the regular endpoint
+        const response = await fetch(`/api/trees/${treeId}/relationships`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(relationshipsToCreate[0]),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || t("relationships.errors.failed"));
+        }
       }
 
       toast.success(t("relationships.success"));
@@ -174,6 +255,62 @@ export function AddRelationshipDialog({
                   onChange={(e) => setMarriageDate(e.target.value)}
                   disabled={loading}
                 />
+              </div>
+            )}
+
+            {/* Other parent selection for parent-child relationships */}
+            {isParentChildType && (
+              <div className="grid gap-2">
+                <Label htmlFor="otherParent">
+                  {t("relationships.otherParent.label")}
+                </Label>
+                {existingOtherParent ? (
+                  <div className="rounded-lg bg-muted/50 p-3 text-sm">
+                    <p className="text-muted-foreground">
+                      {t("relationships.otherParent.existing")}:
+                    </p>
+                    <p className="font-medium mt-1">
+                      {existingOtherParent.firstName} {existingOtherParent.lastName}
+                    </p>
+                  </div>
+                ) : potentialOtherParents.length > 0 ? (
+                  <Select
+                    value={otherParentId || "none"}
+                    onValueChange={(value) => setOtherParentId(value === "none" ? null : value)}
+                    disabled={loading}
+                  >
+                    <SelectTrigger id="otherParent">
+                      <SelectValue>
+                        {otherParentId 
+                          ? (() => {
+                              const selected = potentialOtherParents.find(p => p.id === otherParentId);
+                              return selected ? `${selected.firstName} ${selected.lastName ?? ''}` : t("relationships.otherParent.none");
+                            })()
+                          : t("relationships.otherParent.none")
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        <span className="text-muted-foreground">
+                          {t("relationships.otherParent.none")}
+                        </span>
+                      </SelectItem>
+                      {potentialOtherParents.map((parent) => (
+                        <SelectItem key={parent.id} value={parent.id}>
+                          {parent.firstName} {parent.lastName ?? ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-sm text-muted-foreground rounded-lg bg-muted/50 p-3">
+                    {t("relationships.otherParent.noSpouse")}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {t("relationships.otherParent.hint")}
+                </p>
               </div>
             )}
           </div>

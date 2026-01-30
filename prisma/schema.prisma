@@ -1,10 +1,39 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider = "postgresql"
+  extensions = [vector]
 }
+
+model SearchIndex {
+  id        String                 @id @default(cuid())
+  content   String                 @db.Text
+  metadata  Json?
+  embedding Unsupported("vector(3072)")
+
+  createdAt DateTime @default(now())
+}
+
+model IndexingJob {
+  id           String   @id @default(cuid())
+  type         String   // INDEX, DELETE
+  resourceType String   // PHOTO, DOCUMENT, AUDIO
+  resourceId   String
+  metadata     Json?    // Store extra info like paths or treeIds
+  
+  status       String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  attempts     Int      @default(0)
+  error        String?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status])
+}
+
 
 // ==================== AUTHENTICATION (Auth.js) ====================
 

@@ -53,6 +53,8 @@ export async function DELETE(
       filePath = photo.filePath;
 
       await prisma.photo.delete({ where: { id } });
+      await import("@/lib/ai/indexing").then(m => m.queueIndexingJob("DELETE", "PHOTO", id));
+
     } else if (type === "document") {
       const document = await prisma.document.findFirst({
         where: { id, memberId },
@@ -65,6 +67,8 @@ export async function DELETE(
       filePath = document.filePath;
 
       await prisma.document.delete({ where: { id } });
+      await import("@/lib/ai/indexing").then(m => m.queueIndexingJob("DELETE", "DOCUMENT", id));
+
     } else if (type === "audio") {
       const audioClip = await prisma.audioClip.findFirst({
         where: { id, memberId },
@@ -77,6 +81,7 @@ export async function DELETE(
       filePath = audioClip.filePath;
 
       await prisma.audioClip.delete({ where: { id } });
+      await import("@/lib/ai/indexing").then(m => m.queueIndexingJob("DELETE", "AUDIO", id));
     }
 
     // Delete the actual file from storage

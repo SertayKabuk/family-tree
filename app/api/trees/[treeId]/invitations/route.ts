@@ -5,8 +5,8 @@ import { z } from "zod";
 import { MemberRole } from "@prisma/client";
 
 const createInvitationSchema = z.object({
-  role: z.nativeEnum(MemberRole).optional().default("VIEWER"),
-  email: z.string().email().optional(),
+  role: z.enum(MemberRole).optional().default("VIEWER"),
+  email: z.email().optional(),
   expiresInDays: z.number().min(1).max(30).optional().default(7),
 });
 

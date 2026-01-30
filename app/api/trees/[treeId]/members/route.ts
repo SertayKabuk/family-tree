@@ -8,7 +8,7 @@ const createMemberSchema = z.object({
   firstName: z.string().min(1).max(100),
   lastName: z.string().max(100).nullable().optional(),
   nickname: z.string().max(100).nullable().optional(),
-  gender: z.nativeEnum(Gender),
+  gender: z.enum(Gender),
   birthDate: z.string().nullable().optional(),
   deathDate: z.string().nullable().optional(),
   bio: z.string().nullable().optional(),

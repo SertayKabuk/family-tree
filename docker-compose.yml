@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg18-trixie
     container_name: familytree-db
     restart: unless-stopped
     environment:
@@ -24,7 +24,7 @@ services:
     env_file:
       - .env.local
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/familytree
+      DATABASE_URL: postgresql://postgres:postgres@familytree-db:5432/familytree
       AUTH_TRUST_HOST: "true"
     volumes:
       - ./uploads:/app/uploads

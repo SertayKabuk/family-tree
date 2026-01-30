@@ -9,7 +9,7 @@ const updateMemberSchema = z.object({
   firstName: z.string().min(1).max(100).optional(),
   lastName: z.string().max(100).nullable().optional(),
   nickname: z.string().max(100).nullable().optional(),
-  gender: z.nativeEnum(Gender).optional(),
+  gender: z.enum(Gender).optional(),
   birthDate: z.string().nullable().optional(),
   deathDate: z.string().nullable().optional(),
   bio: z.string().nullable().optional(),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ReactFlow,
   Background,
@@ -23,6 +24,7 @@ import { useTranslations } from "next-intl";
 import { FamilyMember, Relationship, RelationshipType } from "@prisma/client";
 import { FamilyMemberNode, FamilyMemberNodeData } from "@/components/nodes/family-member-node";
 import { RelationshipEdge, RelationshipEdgeData } from "@/components/edges/relationship-edge";
+import { FamilyGroupEdge, FamilyGroupEdgeData } from "@/components/edges/family-group-edge";
 import { TreeToolbar } from "@/components/tree/tree-toolbar";
 import { MemberDetailModal } from "@/components/tree/member-detail-modal";
 import { AddMemberDialog } from "@/components/tree/add-member-dialog";
@@ -30,6 +32,18 @@ import { AddRelationshipDialog } from "@/components/tree/add-relationship-dialog
 import { getLayoutedElements } from "@/lib/tree-layout";
 import { GENDER_COLORS } from "@/lib/tree-colors";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 const nodeTypes: NodeTypes = {
   familyMember: FamilyMemberNode,
@@ -37,6 +51,7 @@ const nodeTypes: NodeTypes = {
 
 const edgeTypes: EdgeTypes = {
   relationship: RelationshipEdge,
+  familyGroup: FamilyGroupEdge,
 };
 
 interface FamilyTreeCanvasProps {
@@ -44,6 +59,18 @@ interface FamilyTreeCanvasProps {
   members: FamilyMember[];
   relationships: Relationship[];
   canEdit: boolean;
+}
+
+// Interface for spouse cascade deletion dialog state
+interface SpouseCascadeState {
+  open: boolean;
+  edgeId: string;
+  fromMemberId: string;
+  toMemberId: string;
+  type: RelationshipType;
+  deletedSpouseName: string;
+  sharedChildren: { id: string; name: string; relationTypes: RelationshipType[] }[];
+  cascadeDelete: boolean;
 }
 
 function transformMembersToNodes(members: FamilyMember[]): Node<FamilyMemberNodeData>[] {
@@ -72,11 +99,90 @@ function transformRelationshipsToEdges(
   relationships: Relationship[],
   members: FamilyMember[],
   canEdit: boolean,
-  onDelete?: (edgeId: string, fromMemberId: string, toMemberId: string, type: RelationshipType) => void
-): Edge<RelationshipEdgeData>[] {
+  onDelete?: (edgeId: string, fromMemberId: string, toMemberId: string, type: RelationshipType) => void,
+  onDeleteFamilyGroup?: (childId: string, parentIds: string[], parentRelTypes: Map<string, RelationshipType>) => void
+): Edge<RelationshipEdgeData | FamilyGroupEdgeData>[] {
   const memberMap = new Map(members.map((m) => [m.id, m]));
 
-  return relationships.map((rel) => {
+  // Separate parent-child relationships from others
+  const parentChildRels: Relationship[] = [];
+  const otherRels: Relationship[] = [];
+
+  for (const rel of relationships) {
+    if (rel.type === "PARENT_CHILD" || rel.type === "ADOPTIVE_PARENT" || rel.type === "FOSTER_PARENT") {
+      parentChildRels.push(rel);
+    } else {
+      otherRels.push(rel);
+    }
+  }
+
+  // Group parent-child relationships by child to find parent pairs
+  // Also track the relationship type for each parent
+  const childToParents = new Map<string, { parentId: string; type: RelationshipType }[]>();
+  for (const rel of parentChildRels) {
+    const existing = childToParents.get(rel.toMemberId) || [];
+    existing.push({ parentId: rel.fromMemberId, type: rel.type });
+    childToParents.set(rel.toMemberId, existing);
+  }
+
+  // Group children by parent pair (sorted parent IDs as key)
+  // Include the relationship types for each parent
+  const parentPairToChildren = new Map<string, {
+    childId: string;
+    parentIds: string[];
+    parentRelTypes: Map<string, RelationshipType>;
+  }[]>();
+
+  for (const [childId, parents] of childToParents.entries()) {
+    // Sort parent IDs to create consistent key
+    const parentIds = parents.map(p => p.parentId).sort();
+    const key = parentIds.join("-");
+
+    // Build map of parent ID -> relationship type
+    const parentRelTypes = new Map<string, RelationshipType>();
+    for (const p of parents) {
+      parentRelTypes.set(p.parentId, p.type);
+    }
+
+    const existing = parentPairToChildren.get(key) || [];
+    existing.push({ childId, parentIds, parentRelTypes });
+    parentPairToChildren.set(key, existing);
+  }
+
+  const edges: Edge<RelationshipEdgeData | FamilyGroupEdgeData>[] = [];
+
+  // Create family group edges for parent-child relationships
+  for (const [parentPairKey, children] of parentPairToChildren.entries()) {
+    const parentIds = children[0].parentIds;
+    const childIds = children.map(c => c.childId);
+
+    // Merge all parent relationship types from all children
+    // (they should be the same, but this handles potential edge cases)
+    const mergedParentRelTypes = new Map<string, RelationshipType>();
+    for (const child of children) {
+      for (const [parentId, type] of child.parentRelTypes) {
+        mergedParentRelTypes.set(parentId, type);
+      }
+    }
+
+    edges.push({
+      id: `family-group-${parentPairKey}`,
+      source: parentIds[0], // Required by React Flow
+      target: childIds[0],  // Required by React Flow
+      type: "familyGroup",
+      data: {
+        type: "FAMILY_GROUP",
+        parentIds,
+        childIds,
+        parentRelTypes: Object.fromEntries(mergedParentRelTypes), // Convert Map to plain object for serialization
+        canEdit,
+        onDeleteChild: onDeleteFamilyGroup,
+      },
+    });
+  }
+
+  // Create regular edges for other relationship types
+  for (const rel of otherRels) {
     const fromMember = memberMap.get(rel.fromMemberId);
     const toMember = memberMap.get(rel.toMemberId);
 
@@ -89,12 +195,34 @@ function transformRelationshipsToEdges(
       rel.type === "HALF_SIBLING" ||
       rel.type === "STEP_SIBLING";
 
-    return {
+    // Dynamic handle selection based on relative X positions
+    // Edge should connect the inner sides of the two nodes
+    let sourceHandle: string | undefined;
+    let targetHandle: string | undefined;
+
+    if (isHorizontal) {
+      const fromX = fromMember?.positionX ?? 0;
+      const toX = toMember?.positionX ?? 0;
+
+      if (fromX < toX) {
+        // Source is to the left of target
+        // Connect: source's right side -> target's left side
+        sourceHandle = "right-source";
+        targetHandle = "left-target";
+      } else {
+        // Source is to the right of target (or same position)
+        // Connect: source's left side -> target's right side
+        sourceHandle = "left-source";
+        targetHandle = "right-target";
+      }
+    }
+
+    edges.push({
       id: `${rel.fromMemberId}-${rel.toMemberId}-${rel.type}`,
       source: rel.fromMemberId,
       target: rel.toMemberId,
-      sourceHandle: isHorizontal ? "left" : undefined,
-      targetHandle: isHorizontal ? "right" : undefined,
+      sourceHandle,
+      targetHandle,
       type: "relationship",
       data: {
         type: rel.type,
@@ -106,8 +234,10 @@ function transformRelationshipsToEdges(
         canEdit,
         onDelete,
       },
-    };
-  });
+    });
+  }
+
+  return edges;
 }
 
 function FamilyTreeCanvasInner({
@@ -117,17 +247,13 @@ function FamilyTreeCanvasInner({
   canEdit,
 }: FamilyTreeCanvasProps) {
   const { fitView } = useReactFlow();
+  const router = useRouter();
   const t = useTranslations();
 
   const initialNodes = useMemo(() => transformMembersToNodes(members), [members]);
-  // Initially create edges without the delete handler - we'll add it via useEffect
-  const initialEdges = useMemo(
-    () => transformRelationshipsToEdges(relationships, members, canEdit),
-    [relationships, members, canEdit]
-  );
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<RelationshipEdgeData | FamilyGroupEdgeData>>([]);
 
   const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -135,9 +261,92 @@ function FamilyTreeCanvasInner({
   const [addRelationshipOpen, setAddRelationshipOpen] = useState(false);
   const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
 
-  // Handle relationship deletion
+  // Spouse cascade deletion state
+  const [spouseCascade, setSpouseCascade] = useState<SpouseCascadeState>({
+    open: false,
+    edgeId: "",
+    fromMemberId: "",
+    toMemberId: "",
+    type: "SPOUSE",
+    deletedSpouseName: "",
+    sharedChildren: [],
+    cascadeDelete: false,
+  });
+
+  // Find shared children between two spouses/partners
+  const findSharedChildren = useCallback(
+    (personAId: string, personBId: string): { id: string; name: string; relationTypes: RelationshipType[] }[] => {
+      const result: { id: string; name: string; relationTypes: RelationshipType[] }[] = [];
+
+      // Find all children where the deleted spouse (personB) is a parent
+      const personBChildRels = relationships.filter(
+        (r) =>
+          r.fromMemberId === personBId &&
+          (r.type === "PARENT_CHILD" || r.type === "ADOPTIVE_PARENT" || r.type === "FOSTER_PARENT")
+      );
+
+      // For each child, check if personA is also a parent
+      for (const childRel of personBChildRels) {
+        const personAParentRel = relationships.find(
+          (r) =>
+            r.fromMemberId === personAId &&
+            r.toMemberId === childRel.toMemberId &&
+            (r.type === "PARENT_CHILD" || r.type === "ADOPTIVE_PARENT" || r.type === "FOSTER_PARENT")
+        );
+
+        if (personAParentRel) {
+          // This is a shared child
+          const childMember = members.find((m) => m.id === childRel.toMemberId);
+          if (childMember) {
+            result.push({
+              id: childMember.id,
+              name: `${childMember.firstName} ${childMember.lastName || ""}`.trim(),
+              relationTypes: [childRel.type], // The relationship type from the deleted spouse
+            });
+          }
+        }
+      }
+
+      return result;
+    },
+    [relationships, members]
+  );
+
+  // Handle relationship deletion with spouse cascade support
   const handleDeleteRelationship = useCallback(
     async (edgeId: string, fromMemberId: string, toMemberId: string, type: RelationshipType) => {
+      const isSpouseType = type === "SPOUSE" || type === "PARTNER" || type === "EX_SPOUSE";
+
+      if (isSpouseType) {
+        // Check for shared children
+        const sharedChildren = findSharedChildren(fromMemberId, toMemberId);
+
+        if (sharedChildren.length > 0) {
+          // Find the name of the spouse being "removed"
+          const deletedSpouse = members.find((m) => m.id === toMemberId);
+          const deletedSpouseName = deletedSpouse
+            ? `${deletedSpouse.firstName} ${deletedSpouse.lastName || ""}`.trim()
+            : t("relationships.delete.theSpouse");
+
+          // Show cascade dialog
+          setSpouseCascade({
+            open: true,
+            edgeId,
+            fromMemberId,
+            toMemberId,
+            type,
+            deletedSpouseName,
+            sharedChildren,
+            cascadeDelete: false,
+          });
+          return;
+        }
+      }
+
+      // Simple deletion without cascade - use optimistic UI
+      const previousEdges = edges;
+      setEdges((eds) => eds.filter((e) => e.id !== edgeId));
+
       try {
         const response = await fetch(`/api/trees/${treeId}/relationships`, {
           method: "DELETE",
@@ -149,22 +358,162 @@ function FamilyTreeCanvasInner({
           throw new Error("Failed to delete");
         }
 
-        // Remove edge from local state immediately
-        setEdges((eds) => eds.filter((e) => e.id !== edgeId));
         toast.success(t("relationships.delete.success"));
       } catch (error) {
         console.error("Failed to delete relationship:", error);
+        // Rollback on failure
+        setEdges(previousEdges);
         toast.error(t("relationships.delete.error"));
       }
     },
-    [treeId, setEdges, t]
+    [treeId, edges, setEdges, t, findSharedChildren, members]
+  );
+
+  // Execute spouse cascade deletion
+  const executeSpouseCascadeDelete = useCallback(async () => {
+    const { edgeId, fromMemberId, toMemberId, type, sharedChildren, cascadeDelete } = spouseCascade;
+
+    // Build relationships to delete
+    const relationshipsToDelete: { fromMemberId: string; toMemberId: string; type: RelationshipType }[] = [
+      { fromMemberId, toMemberId, type },
+    ];
+
+    // If cascade is enabled, add the deleted spouse's parent relationships to shared children
+    if (cascadeDelete) {
+      for (const child of sharedChildren) {
+        for (const relType of child.relationTypes) {
+          relationshipsToDelete.push({
+            fromMemberId: toMemberId, // The "deleted" spouse
+            toMemberId: child.id,
+            type: relType,
+          });
+        }
+      }
+    }
+
+    // Optimistic UI - compute which edges to remove
+    const previousEdges = edges;
+    const edgeIdsToRemove = new Set<string>();
+    edgeIdsToRemove.add(edgeId);
+
+    if (cascadeDelete) {
+      // Also compute family-group edges that need updating
+      for (const child of sharedChildren) {
+        // Find the family-group edge containing this child where toMemberId is a parent
+        for (const edge of edges) {
+          if (edge.type === "familyGroup") {
+            const data = edge.data as FamilyGroupEdgeData;
+            if (data.childIds?.includes(child.id) && data.parentIds?.includes(toMemberId)) {
+              edgeIdsToRemove.add(edge.id);
+            }
+          }
+        }
+      }
+    }
+
+    setEdges((eds) => eds.filter((e) => !edgeIdsToRemove.has(e.id)));
+    setSpouseCascade((prev) => ({ ...prev, open: false }));
+
+    try {
+      const response = await fetch(`/api/trees/${treeId}/relationships/batch`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ relationships: relationshipsToDelete }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete");
+      }
+
+      toast.success(t("relationships.delete.success"));
+      // Refresh to get clean state since family-group edges may need recalculation
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to delete relationships:", error);
+      // Rollback on failure
+      setEdges(previousEdges);
+      toast.error(t("relationships.delete.error"));
+    }
+  }, [spouseCascade, edges, setEdges, treeId, t, router]);
+
+  // Handle family group child deletion (removes parent-child relationships for a child)
+  // Now uses batch delete with proper relationship types and optimistic UI
+  const handleDeleteFamilyGroupChild = useCallback(
+    async (childId: string, parentIds: string[], parentRelTypes: Map<string, RelationshipType>) => {
+      // Build relationships array with proper types
+      const relationshipsToDelete = parentIds.map((parentId) => ({
+        fromMemberId: parentId,
+        toMemberId: childId,
+        // Use the actual relationship type from parentRelTypes, or default to PARENT_CHILD
+        type: parentRelTypes.get(parentId) || ("PARENT_CHILD" as RelationshipType),
+      }));
+
+      // Optimistic UI - save and update edges
+      const previousEdges = edges;
+
+      // Filter edges: remove family-group edges that would lose this child
+      setEdges((eds) =>
+        eds.filter((edge) => {
+          if (edge.type === "familyGroup") {
+            const data = edge.data as FamilyGroupEdgeData;
+            // Check if this edge is affected
+            const isAffected =
+              data.childIds?.includes(childId) &&
+              parentIds.every((pId) => data.parentIds?.includes(pId));
+
+            if (isAffected) {
+              // If this was the only child, remove the edge entirely
+              if (data.childIds?.length === 1) {
+                return false;
+              }
+              // Otherwise the edge will be regenerated on refresh
+              // For now, just remove it since we're refreshing anyway
+              return false;
+            }
+          }
+          return true;
+        })
+      );
+
+      try {
+        const response = await fetch(`/api/trees/${treeId}/relationships/batch`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ relationships: relationshipsToDelete }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to delete");
+        }
+
+        toast.success(t("relationships.delete.success"));
+        // Refresh to get updated edges
+        router.refresh();
+      } catch (error) {
+        console.error("Failed to delete family relationship:", error);
+        // Rollback on failure
+        setEdges(previousEdges);
+        toast.error(t("relationships.delete.error"));
+      }
+    },
+    [treeId, edges, setEdges, t, router]
   );
 
   // Update nodes/edges when data changes
+  // Note: handleDeleteRelationship and handleDeleteFamilyGroupChild are intentionally
+  // excluded from deps to avoid infinite loops - they depend on `edges` which this effect sets.
+  // The callbacks are stable references for the edge data, not triggers for re-running.
   useEffect(() => {
     setNodes(transformMembersToNodes(members));
-    setEdges(transformRelationshipsToEdges(relationships, members, canEdit, handleDeleteRelationship));
-  }, [members, relationships, setNodes, setEdges, canEdit, handleDeleteRelationship]);
+    setEdges(transformRelationshipsToEdges(
+      relationships,
+      members,
+      canEdit,
+      handleDeleteRelationship,
+      handleDeleteFamilyGroupChild
+    ));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [members, relationships, setNodes, setEdges, canEdit]);
 
   // Handle node click to show member details
   const onNodeClick = useCallback(
@@ -293,7 +642,9 @@ function FamilyTreeCanvasInner({
         }}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
-        <Controls />
+        <Controls
+          className="!bg-background/95 !border-border !shadow-lg [&>button]:!bg-background [&>button]:!border-border [&>button]:!text-foreground [&>button:hover]:!bg-muted"
+        />
         <MiniMap
           nodeColor={nodeColor}
           nodeStrokeWidth={3}
@@ -331,8 +682,67 @@ function FamilyTreeCanvasInner({
         onOpenChange={setAddRelationshipOpen}
         connection={pendingConnection}
         members={members}
+        relationships={relationships}
         onClose={() => setPendingConnection(null)}
       />
+
+      {/* Spouse Cascade Deletion Dialog */}
+      <AlertDialog
+        open={spouseCascade.open}
+        onOpenChange={(open) => setSpouseCascade((prev) => ({ ...prev, open }))}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("relationships.delete.title")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("relationships.delete.spouseDescription")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {spouseCascade.sharedChildren.length > 0 && (
+            <div className="rounded-lg bg-muted p-3 text-sm">
+              <p className="font-medium mb-2">
+                {t("relationships.delete.sharedChildren", {
+                  name: spouseCascade.deletedSpouseName,
+                  count: spouseCascade.sharedChildren.length,
+                })}
+              </p>
+              <ul className="list-disc list-inside text-muted-foreground">
+                {spouseCascade.sharedChildren.map((child) => (
+                  <li key={child.id}>{child.name}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {spouseCascade.sharedChildren.length > 0 && (
+            <div className="flex items-start gap-2 py-2">
+              <Checkbox
+                id="cascade-delete"
+                checked={spouseCascade.cascadeDelete}
+                onCheckedChange={(checked) =>
+                  setSpouseCascade((prev) => ({ ...prev, cascadeDelete: checked === true }))
+                }
+              />
+              <Label
+                htmlFor="cascade-delete"
+                className="text-sm font-normal leading-tight cursor-pointer"
+              >
+                {t("relationships.delete.cascadeOption", {
+                  name: spouseCascade.deletedSpouseName,
+                })}
+              </Label>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={executeSpouseCascadeDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t("relationships.delete.confirm")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

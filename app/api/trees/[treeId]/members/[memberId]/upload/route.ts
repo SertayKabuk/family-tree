@@ -83,7 +83,7 @@ export async function POST(
     const result = await uploadFile(treeId, memberId, type, file);
 
     // Save to database based on type
-    let dbRecord;
+    let dbRecord: { id: string } | null = null;
 
     if (type === "profile") {
       // Update member's profile picture
@@ -91,6 +91,8 @@ export async function POST(
         where: { id: memberId },
         data: { profilePicturePath: result.filePath },
       });
+      // We also index the profile picture? Maybe useful for identifying the person.
+      // await indexResource("PHOTO", memberId, result.filePath, { isProfile: true, treeId });
     } else if (type === "photos") {
       dbRecord = await prisma.photo.create({
         data: {
@@ -100,6 +102,14 @@ export async function POST(
           filePath: result.filePath,
         },
       });
+      // Queue Index Job (Async)
+      await import("@/lib/ai/indexing").then(m =>
+        m.queueIndexingJob("INDEX", "PHOTO", dbRecord!.id, {
+          filePath: result.filePath,
+          title, description, treeId, memberId
+        })
+      );
+
     } else if (type === "documents") {
       dbRecord = await prisma.document.create({
         data: {
@@ -111,6 +121,13 @@ export async function POST(
           fileSize: file.size,
         },
       });
+      await import("@/lib/ai/indexing").then(m =>
+        m.queueIndexingJob("INDEX", "DOCUMENT", dbRecord!.id, {
+          filePath: result.filePath,
+          title, description, treeId, memberId
+        })
+      );
+
     } else if (type === "audio") {
       dbRecord = await prisma.audioClip.create({
         data: {
@@ -120,7 +137,14 @@ export async function POST(
           filePath: result.filePath,
         },
       });
+      await import("@/lib/ai/indexing").then(m =>
+        m.queueIndexingJob("INDEX", "AUDIO", dbRecord!.id, {
+          filePath: result.filePath,
+          title, description, treeId, memberId
+        })
+      );
     }
+
 
     return NextResponse.json(
       {
