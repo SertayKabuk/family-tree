@@ -16,6 +16,7 @@ export interface RelationshipMaps {
   spousePairs: Map<string, string>;
   childToParents: Map<string, Set<string>>;
   parentToChildren: Map<string, Set<string>>;
+  siblingPairs: Map<string, Set<string>>;
 }
 
 export interface TargetPosition {

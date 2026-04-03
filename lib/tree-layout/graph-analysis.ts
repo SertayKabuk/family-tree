@@ -6,6 +6,7 @@ import type { ParentChildRelation, RelationshipMaps } from "./types";
  */
 export function parseRelationships(edges: Edge[]): RelationshipMaps {
   const spousePairs = new Map<string, string>();
+  const siblingPairs = new Map<string, Set<string>>();
   const parentChildRels: ParentChildRelation[] = [];
 
   for (const edge of edges) {
@@ -15,6 +16,15 @@ export function parseRelationships(edges: Edge[]): RelationshipMaps {
     if (type === "SPOUSE" || type === "PARTNER" || type === "EX_SPOUSE") {
       spousePairs.set(edge.source, edge.target);
       spousePairs.set(edge.target, edge.source);
+    } else if (
+      type === "SIBLING" ||
+      type === "HALF_SIBLING" ||
+      type === "STEP_SIBLING"
+    ) {
+      if (!siblingPairs.has(edge.source)) siblingPairs.set(edge.source, new Set());
+      if (!siblingPairs.has(edge.target)) siblingPairs.set(edge.target, new Set());
+      siblingPairs.get(edge.source)!.add(edge.target);
+      siblingPairs.get(edge.target)!.add(edge.source);
     } else if (
       type === "PARENT_CHILD" ||
       type === "ADOPTIVE_PARENT" ||
@@ -55,7 +65,7 @@ export function parseRelationships(edges: Edge[]): RelationshipMaps {
     parentToChildren.get(rel.parentId)!.add(rel.childId);
   }
 
-  return { spousePairs, childToParents, parentToChildren };
+  return { spousePairs, childToParents, parentToChildren, siblingPairs };
 }
 
 /**
@@ -65,7 +75,8 @@ export function findDisconnectedComponents(
   nodes: Node[],
   spousePairs: Map<string, string>,
   childToParents: Map<string, Set<string>>,
-  parentToChildren: Map<string, Set<string>>
+  parentToChildren: Map<string, Set<string>>,
+  siblingPairs: Map<string, Set<string>>
 ): string[][] {
   const visited = new Set<string>();
   const components: string[][] = [];
@@ -102,6 +113,16 @@ export function findDisconnectedComponents(
         for (const childId of children) {
           if (!visited.has(childId)) {
             queue.push(childId);
+          }
+        }
+      }
+
+      // Add siblings
+      const siblings = siblingPairs.get(current);
+      if (siblings) {
+        for (const siblingId of siblings) {
+          if (!visited.has(siblingId)) {
+            queue.push(siblingId);
           }
         }
       }

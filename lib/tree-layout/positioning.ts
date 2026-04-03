@@ -4,16 +4,24 @@ import {
   HORIZONTAL_GAP,
   VERTICAL_GAP,
 } from "./constants";
-import type { Position, TargetPosition } from "./types";
+import type { Position } from "./types";
+
+interface GroupPosition {
+  members: string[];
+  x: number;
+  width: number;
+}
 
 /**
- * Position nodes within a component with collision avoidance
+ * Position nodes within a component with collision avoidance.
+ * Couples (spouses) are always kept together as a unit.
  */
 export function positionComponent(
   sortedGens: number[],
   generationGroups: Map<number, string[]>,
   spousePairs: Map<string, string>,
-  childToParents: Map<string, Set<string>>
+  childToParents: Map<string, Set<string>>,
+  siblingPairs: Map<string, Set<string>>
 ): Map<string, Position> {
   const positions = new Map<string, Position>();
 
@@ -27,19 +35,32 @@ export function positionComponent(
     // Sort groups to position children near their parents
     sortGroupsByParentPosition(groups, childToParents, positions);
 
-    // Calculate initial positions
-    const targetPositions = calculateInitialPositions(
+    // Ensure sibling groups are placed adjacent to each other
+    sortGroupsBySiblingAdjacency(groups, childToParents, siblingPairs);
+
+    // Calculate group-level positions, centering under the blood-relative's parents
+    const groupPositions = calculateGroupPositions(
       groups,
       childToParents,
-      positions
+      siblingPairs,
+      positions,
+      nodesInGen
     );
 
-    // Apply collision avoidance
-    resolveCollisions(targetPositions);
+    // Resolve collisions at group level (keeps couples together)
+    resolveGroupCollisions(groupPositions);
 
-    // Store final positions
-    for (const { nodeId, x } of targetPositions) {
-      positions.set(nodeId, { x, y });
+    // Order couple members based on actual resolved positions
+    orderCouplesByPosition(groupPositions, childToParents, siblingPairs, nodesInGen);
+
+    // Expand groups to individual node positions
+    for (const gp of groupPositions) {
+      for (let i = 0; i < gp.members.length; i++) {
+        positions.set(gp.members[i], {
+          x: gp.x + i * (NODE_WIDTH + HORIZONTAL_GAP / 2),
+          y,
+        });
+      }
     }
   }
 
@@ -65,7 +86,7 @@ function groupNodesIntoCouples(
       nodesInGen.includes(spouseId) &&
       !processed.has(spouseId)
     ) {
-      // Couple - sort by ID for consistent ordering (affects edge handle direction)
+      // Couple - initial ordering by ID (refined by orderCouplesByPosition later)
       const couple = [nodeId, spouseId].sort();
       groups.push(couple);
       processed.add(nodeId);
@@ -81,7 +102,8 @@ function groupNodesIntoCouples(
 }
 
 /**
- * Sort groups so children are positioned near their parents
+ * Sort groups so children are positioned near their parents.
+ * Checks ALL members in a group for parent info (not just the first).
  */
 function sortGroupsByParentPosition(
   groups: string[][],
@@ -89,17 +111,14 @@ function sortGroupsByParentPosition(
   positions: Map<string, Position>
 ): void {
   groups.sort((a, b) => {
-    const aParents = childToParents.get(a[0]);
-    const bParents = childToParents.get(b[0]);
+    const aInfo = getGroupParentInfo(a, childToParents, positions);
+    const bInfo = getGroupParentInfo(b, childToParents, positions);
 
-    if (aParents && aParents.size > 0 && bParents && bParents.size > 0) {
-      // Both have parents - sort by parent X position
-      const aParentX = getParentCenterX(a[0], positions, childToParents);
-      const bParentX = getParentCenterX(b[0], positions, childToParents);
-      return aParentX - bParentX;
-    } else if (aParents && aParents.size > 0) {
+    if (aInfo.hasParents && bInfo.hasParents) {
+      return aInfo.centerX - bInfo.centerX;
+    } else if (aInfo.hasParents) {
       return 1; // a has parents, b doesn't -> b comes first
-    } else if (bParents && bParents.size > 0) {
+    } else if (bInfo.hasParents) {
       return -1;
     }
     return 0;
@@ -107,75 +126,323 @@ function sortGroupsByParentPosition(
 }
 
 /**
- * Calculate initial positions for all nodes in a generation
+ * Check if any member in the group has parents, and return the parent center X.
  */
-function calculateInitialPositions(
-  groups: string[][],
+function getGroupParentInfo(
+  group: string[],
   childToParents: Map<string, Set<string>>,
   positions: Map<string, Position>
-): TargetPosition[] {
-  // Calculate total width needed
-  let totalWidth = 0;
-  for (const group of groups) {
-    totalWidth +=
-      group.length * NODE_WIDTH + (group.length - 1) * (HORIZONTAL_GAP / 2);
-  }
-  totalWidth += (groups.length - 1) * HORIZONTAL_GAP;
-
-  // Initial X position (centered around 0)
-  let currentX = -totalWidth / 2;
-  const targetPositions: TargetPosition[] = [];
-
-  for (const group of groups) {
-    // Try to center under parents if this is a child
-    const childId = group[0];
-    const parents = childToParents.get(childId);
-
-    let groupStartX = currentX;
-
+): { hasParents: boolean; centerX: number } {
+  for (const memberId of group) {
+    const parents = childToParents.get(memberId);
     if (parents && parents.size > 0) {
-      const parentCenterX = getParentCenterX(childId, positions, childToParents);
-      if (parentCenterX !== 0) {
-        // Center this group under parents
-        const groupWidth =
-          group.length * NODE_WIDTH + (group.length - 1) * (HORIZONTAL_GAP / 2);
-        groupStartX = parentCenterX - groupWidth / 2;
-      }
+      return {
+        hasParents: true,
+        centerX: getParentCenterX(memberId, positions, childToParents),
+      };
     }
-
-    for (let i = 0; i < group.length; i++) {
-      const nodeId = group[i];
-      targetPositions.push({
-        nodeId,
-        x: groupStartX + i * (NODE_WIDTH + HORIZONTAL_GAP / 2),
-      });
-    }
-
-    currentX +=
-      group.length * NODE_WIDTH +
-      (group.length - 1) * (HORIZONTAL_GAP / 2) +
-      HORIZONTAL_GAP;
   }
-
-  return targetPositions;
+  return { hasParents: false, centerX: 0 };
 }
 
 /**
- * Push overlapping nodes to the right to resolve collisions
+ * Reorder groups so that sibling-connected groups are adjacent.
+ * Uses greedy chaining: start with first group and always pick
+ * a sibling-connected group as the next one if available.
  */
-function resolveCollisions(targetPositions: TargetPosition[]): void {
-  targetPositions.sort((a, b) => a.x - b.x);
+function sortGroupsBySiblingAdjacency(
+  groups: string[][],
+  childToParents: Map<string, Set<string>>,
+  siblingPairs: Map<string, Set<string>>
+): void {
+  const n = groups.length;
+  if (n <= 2) return;
 
-  for (let i = 1; i < targetPositions.length; i++) {
-    const prev = targetPositions[i - 1];
-    const curr = targetPositions[i];
-    const minX = prev.x + NODE_WIDTH + HORIZONTAL_GAP / 2;
+  // Check if two groups share a sibling connection
+  function areGroupsSiblings(gA: string[], gB: string[]): boolean {
+    for (const a of gA) {
+      for (const b of gB) {
+        // Direct sibling edge
+        if (siblingPairs.get(a)?.has(b)) return true;
+        // Shared parent
+        const aParents = childToParents.get(a);
+        const bParents = childToParents.get(b);
+        if (aParents && bParents) {
+          for (const p of aParents) {
+            if (bParents.has(p)) return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  const placed: number[] = [0];
+  const remaining = new Set<number>();
+  for (let i = 1; i < n; i++) remaining.add(i);
+
+  while (remaining.size > 0) {
+    const last = placed[placed.length - 1];
+    let bestNext: number | null = null;
+
+    for (const idx of remaining) {
+      if (areGroupsSiblings(groups[last], groups[idx])) {
+        bestNext = idx;
+        break;
+      }
+    }
+
+    if (bestNext === null) {
+      bestNext = remaining.values().next().value!;
+    }
+
+    placed.push(bestNext);
+    remaining.delete(bestNext);
+  }
+
+  const reordered = placed.map((i) => [...groups[i]]);
+  for (let i = 0; i < n; i++) {
+    groups[i] = reordered[i];
+  }
+}
+
+/**
+ * Count how many siblings of `memberId` are in the same generation.
+ * Detects siblings both via shared parents AND via direct SIBLING edges.
+ */
+function countSiblingsInGeneration(
+  memberId: string,
+  childToParents: Map<string, Set<string>>,
+  siblingPairs: Map<string, Set<string>>,
+  nodesInGen: string[],
+  ...excludeIds: string[]
+): number {
+  const directSiblings = siblingPairs.get(memberId);
+  const parents = childToParents.get(memberId);
+  const excludeSet = new Set(excludeIds);
+  let count = 0;
+
+  for (const nodeId of nodesInGen) {
+    if (nodeId === memberId || excludeSet.has(nodeId)) continue;
+
+    // Check direct sibling edge
+    if (directSiblings?.has(nodeId)) {
+      count++;
+      continue;
+    }
+
+    // Check shared parents
+    if (parents && parents.size > 0) {
+      const nodeParents = childToParents.get(nodeId);
+      if (nodeParents) {
+        for (const p of parents) {
+          if (nodeParents.has(p)) {
+            count++;
+            break;
+          }
+        }
+      }
+    }
+  }
+  return count;
+}
+
+/**
+ * Calculate group-level positions. For couples, centers under the
+ * "blood-relative" member (the one with sibling connections in this
+ * generation) rather than arbitrarily the first member with parents.
+ */
+function calculateGroupPositions(
+  groups: string[][],
+  childToParents: Map<string, Set<string>>,
+  siblingPairs: Map<string, Set<string>>,
+  positions: Map<string, Position>,
+  nodesInGen: string[]
+): GroupPosition[] {
+  const groupWidths = groups.map(
+    (g) => g.length * NODE_WIDTH + (g.length - 1) * (HORIZONTAL_GAP / 2)
+  );
+
+  let totalWidth = groupWidths.reduce((a, b) => a + b, 0);
+  totalWidth += (groups.length - 1) * HORIZONTAL_GAP;
+
+  let currentX = -totalWidth / 2;
+  const result: GroupPosition[] = [];
+
+  for (let gi = 0; gi < groups.length; gi++) {
+    const group = groups[gi];
+    const width = groupWidths[gi];
+    let groupX = currentX;
+
+    // For couples: find the blood-relative (member with siblings in this gen)
+    // and center under THEIR parents. This ensures the couple is positioned
+    // near the sibling, not near the married-in spouse's family.
+    const centerMemberIndex = findBloodRelativeIndex(
+      group, childToParents, siblingPairs, nodesInGen
+    );
+
+    if (centerMemberIndex >= 0) {
+      const memberId = group[centerMemberIndex];
+      const parentCenterX = getParentCenterX(memberId, positions, childToParents);
+      if (parentCenterX !== 0) {
+        const memberCenterInGroup =
+          centerMemberIndex * (NODE_WIDTH + HORIZONTAL_GAP / 2) + NODE_WIDTH / 2;
+        groupX = parentCenterX - memberCenterInGroup;
+      }
+    } else {
+      // Fallback: center under first member with parents
+      for (let mi = 0; mi < group.length; mi++) {
+        const memberId = group[mi];
+        const parents = childToParents.get(memberId);
+        if (parents && parents.size > 0) {
+          const parentCenterX = getParentCenterX(memberId, positions, childToParents);
+          if (parentCenterX !== 0) {
+            const memberCenterInGroup =
+              mi * (NODE_WIDTH + HORIZONTAL_GAP / 2) + NODE_WIDTH / 2;
+            groupX = parentCenterX - memberCenterInGroup;
+            break;
+          }
+        }
+      }
+    }
+
+    result.push({ members: [...group], x: groupX, width });
+    currentX += width + HORIZONTAL_GAP;
+  }
+
+  return result;
+}
+
+/**
+ * Find the index of the "blood-relative" in a group — the member who has
+ * siblings (via shared parents or SIBLING edges) in the current generation.
+ * Returns -1 if no such member is found.
+ */
+function findBloodRelativeIndex(
+  group: string[],
+  childToParents: Map<string, Set<string>>,
+  siblingPairs: Map<string, Set<string>>,
+  nodesInGen: string[]
+): number {
+  for (let i = 0; i < group.length; i++) {
+    const memberId = group[i];
+    const count = countSiblingsInGeneration(
+      memberId, childToParents, siblingPairs, nodesInGen,
+      // Exclude the other members of this group
+      ...group.filter((_, j) => j !== i)
+    );
+    if (count > 0) {
+      // Also verify this member has parents to center under
+      const parents = childToParents.get(memberId);
+      if (parents && parents.size > 0) return i;
+    }
+  }
+  return -1;
+}
+
+/**
+ * Order couple members AFTER positions have been resolved.
+ * Looks at neighboring groups' actual X positions to decide which side
+ * the blood-relative should face.
+ */
+function orderCouplesByPosition(
+  groupPositions: GroupPosition[],
+  childToParents: Map<string, Set<string>>,
+  siblingPairs: Map<string, Set<string>>,
+  nodesInGen: string[]
+): void {
+  for (let gi = 0; gi < groupPositions.length; gi++) {
+    const gp = groupPositions[gi];
+    if (gp.members.length !== 2) continue;
+
+    const [a, b] = gp.members;
+    const aExcludes = [b];
+    const bExcludes = [a];
+    const aSibCount = countSiblingsInGeneration(a, childToParents, siblingPairs, nodesInGen, b);
+    const bSibCount = countSiblingsInGeneration(b, childToParents, siblingPairs, nodesInGen, a);
+
+    let bloodRelative: string | null = null;
+    let otherMember: string | null = null;
+
+    if (aSibCount > 0 && bSibCount === 0) {
+      bloodRelative = a;
+      otherMember = b;
+    } else if (bSibCount > 0 && aSibCount === 0) {
+      bloodRelative = b;
+      otherMember = a;
+    } else {
+      continue; // both or neither have siblings, keep current order
+    }
+
+    // Find the average X of sibling groups
+    const groupCenterX = gp.x + gp.width / 2;
+    let siblingTotalX = 0;
+    let siblingCount = 0;
+
+    for (let ogi = 0; ogi < groupPositions.length; ogi++) {
+      if (ogi === gi) continue;
+      const otherGp = groupPositions[ogi];
+      const otherCenterX = otherGp.x + otherGp.width / 2;
+
+      for (const otherId of otherGp.members) {
+        if (isSibling(bloodRelative, otherId, childToParents, siblingPairs)) {
+          siblingTotalX += otherCenterX;
+          siblingCount++;
+          break;
+        }
+      }
+    }
+
+    if (siblingCount === 0) continue;
+
+    const siblingAvgX = siblingTotalX / siblingCount;
+
+    if (siblingAvgX < groupCenterX) {
+      // Siblings are to the LEFT → blood-relative on left
+      gp.members = [bloodRelative, otherMember];
+    } else {
+      // Siblings are to the RIGHT → blood-relative on right
+      gp.members = [otherMember, bloodRelative];
+    }
+  }
+}
+
+/**
+ * Check if two members are siblings (via shared parents or direct SIBLING edge)
+ */
+function isSibling(
+  a: string,
+  b: string,
+  childToParents: Map<string, Set<string>>,
+  siblingPairs: Map<string, Set<string>>
+): boolean {
+  if (siblingPairs.get(a)?.has(b)) return true;
+  const aParents = childToParents.get(a);
+  const bParents = childToParents.get(b);
+  if (aParents && bParents) {
+    for (const p of aParents) {
+      if (bParents.has(p)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Resolve collisions at the group level — entire couples move
+ * together, so non-family members can never end up between spouses.
+ */
+function resolveGroupCollisions(groupPositions: GroupPosition[]): void {
+  groupPositions.sort((a, b) => a.x - b.x);
+
+  for (let i = 1; i < groupPositions.length; i++) {
+    const prev = groupPositions[i - 1];
+    const curr = groupPositions[i];
+    const minX = prev.x + prev.width + HORIZONTAL_GAP;
 
     if (curr.x < minX) {
-      // Push this node and all following nodes right
       const pushAmount = minX - curr.x;
-      for (let j = i; j < targetPositions.length; j++) {
-        targetPositions[j].x += pushAmount;
+      for (let j = i; j < groupPositions.length; j++) {
+        groupPositions[j].x += pushAmount;
       }
     }
   }

@@ -23,7 +23,7 @@ export async function getLayoutedElements<N extends Node, E extends Edge>(
   }
 
   // Parse relationships from edges
-  const { spousePairs, childToParents, parentToChildren } =
+  const { spousePairs, childToParents, parentToChildren, siblingPairs } =
     parseRelationships(edges);
 
   const nodeIds = new Set(nodes.map((n) => n.id));
@@ -33,7 +33,8 @@ export async function getLayoutedElements<N extends Node, E extends Edge>(
     nodes,
     spousePairs,
     childToParents,
-    parentToChildren
+    parentToChildren,
+    siblingPairs
   );
 
   // Sort components by size (largest first)
@@ -53,7 +54,8 @@ export async function getLayoutedElements<N extends Node, E extends Edge>(
       spousePairs,
       childToParents,
       parentToChildren,
-      nodeIds
+      nodeIds,
+      siblingPairs
     );
 
     // Group nodes by generation
@@ -75,7 +77,8 @@ export async function getLayoutedElements<N extends Node, E extends Edge>(
       sortedGens,
       generationGroups,
       spousePairs,
-      childToParents
+      childToParents,
+      siblingPairs
     );
 
     // Find component bounds
@@ -110,7 +113,34 @@ export async function getLayoutedElements<N extends Node, E extends Edge>(
     } as N;
   });
 
-  return { nodes: layoutedNodes, edges };
+  // Update edge handles based on new node positions so that
+  // horizontal edges (spouse/sibling) connect from the correct side
+  const layoutedEdges = edges.map((edge) => {
+    const data = edge.data as { type?: string } | undefined;
+    const type = data?.type;
+
+    const isHorizontal =
+      type === "SPOUSE" ||
+      type === "PARTNER" ||
+      type === "EX_SPOUSE" ||
+      type === "SIBLING" ||
+      type === "HALF_SIBLING" ||
+      type === "STEP_SIBLING";
+
+    if (!isHorizontal) return edge;
+
+    const sourcePos = positions.get(edge.source);
+    const targetPos = positions.get(edge.target);
+    if (!sourcePos || !targetPos) return edge;
+
+    if (sourcePos.x < targetPos.x) {
+      return { ...edge, sourceHandle: "right-source", targetHandle: "left-target" };
+    } else {
+      return { ...edge, sourceHandle: "left-source", targetHandle: "right-target" };
+    }
+  }) as E[];
+
+  return { nodes: layoutedNodes, edges: layoutedEdges };
 }
 
 /**

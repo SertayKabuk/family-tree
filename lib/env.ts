@@ -19,14 +19,32 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 });
 
-const parsed = envSchema.safeParse(process.env);
+let _env: z.infer<typeof envSchema> | undefined;
 
-if (!parsed.success) {
-  console.error("❌ Invalid environment variables:");
-  for (const [field, issues] of Object.entries(parsed.error.flatten().fieldErrors)) {
-    console.error(`  ${field}: ${issues?.join(", ")}`);
+const isBuildTime =
+  process.env.NEXT_PHASE === "phase-production-build" ||
+  process.env.SKIP_ENV_VALIDATION === "1";
+
+function getEnv() {
+  if (_env) return _env;
+  if (isBuildTime) {
+    // Return raw process.env with defaults — skip strict validation at build time
+    return process.env as unknown as z.infer<typeof envSchema>;
   }
-  throw new Error("Invalid environment variables. Check server logs.");
+  const parsed = envSchema.safeParse(process.env);
+  if (!parsed.success) {
+    console.error("❌ Invalid environment variables:");
+    for (const [field, issues] of Object.entries(parsed.error.flatten().fieldErrors)) {
+      console.error(`  ${field}: ${issues?.join(", ")}`);
+    }
+    throw new Error("Invalid environment variables. Check server logs.");
+  }
+  _env = parsed.data;
+  return _env;
 }
 
-export const env = parsed.data;
+export const env = new Proxy({} as z.infer<typeof envSchema>, {
+  get(_target, prop: string) {
+    return getEnv()[prop as keyof z.infer<typeof envSchema>];
+  },
+});

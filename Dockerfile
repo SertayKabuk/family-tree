@@ -18,24 +18,6 @@ RUN pnpm install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 
-ARG DATABASE_URL
-ARG GOOGLE_API_KEY
-ARG GOOGLE_LLM_MODEL
-ARG AUTH_GOOGLE_ID
-ARG AUTH_GOOGLE_SECRET
-ARG AUTH_SECRET
-ARG NEXT_PUBLIC_APP_URL
-ARG UPLOAD_DIR
-
-ENV DATABASE_URL=$DATABASE_URL
-ENV GOOGLE_API_KEY=$GOOGLE_API_KEY
-ENV GOOGLE_LLM_MODEL=$GOOGLE_LLM_MODEL
-ENV AUTH_GOOGLE_ID=$AUTH_GOOGLE_ID
-ENV AUTH_GOOGLE_SECRET=$AUTH_GOOGLE_SECRET
-ENV AUTH_SECRET=$AUTH_SECRET
-ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
-ENV UPLOAD_DIR=$UPLOAD_DIR
-
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -43,6 +25,8 @@ COPY . .
 # Set environment variables for build
 # Next.js collects anonymous telemetry data about general usage
 ENV NEXT_TELEMETRY_DISABLED=1
+# Skip env validation during build — real env vars are provided at runtime
+ENV NEXT_PHASE=phase-production-build
 
 # Generate Prisma client
 RUN pnpm prisma generate

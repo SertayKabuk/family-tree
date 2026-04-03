@@ -13,7 +13,8 @@ export function assignGenerationsForComponent(
   spousePairs: Map<string, string>,
   childToParents: Map<string, Set<string>>,
   parentToChildren: Map<string, Set<string>>,
-  allNodeIds: Set<string>
+  allNodeIds: Set<string>,
+  siblingPairs: Map<string, Set<string>>
 ): Map<string, number> {
   const nodeGenerations = new Map<string, number>();
 
@@ -100,6 +101,18 @@ export function assignGenerationsForComponent(
             gen - 1 < nodeGenerations.get(parentId)!
           ) {
             queue.push({ id: parentId, gen: gen - 1 });
+          }
+        }
+      }
+    }
+
+    // Siblings should be on the same generation
+    const siblings = siblingPairs.get(id);
+    if (siblings) {
+      for (const siblingId of siblings) {
+        if (componentNodeIds.has(siblingId) && allNodeIds.has(siblingId)) {
+          if (!nodeGenerations.has(siblingId)) {
+            queue.push({ id: siblingId, gen });
           }
         }
       }
