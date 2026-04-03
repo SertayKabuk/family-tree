@@ -2,8 +2,9 @@ import { mkdir, writeFile, unlink, readFile } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
 import { nanoid } from "nanoid";
+import { env } from "@/lib/env";
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || "./uploads";
+const UPLOAD_DIR = env.UPLOAD_DIR;
 
 export type MediaType = "profile" | "photos" | "documents" | "audio";
 

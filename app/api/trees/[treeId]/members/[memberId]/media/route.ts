@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/permissions";
 import { deleteFile } from "@/lib/storage";
 import { z } from "zod";
+import { enqueueMediaIndexing, enqueueStoryGeneration } from "@/lib/jobs/enqueue";
 
 const deleteMediaSchema = z.object({
   type: z.enum(["photo", "document", "audio"]),
@@ -53,7 +54,7 @@ export async function DELETE(
       filePath = photo.filePath;
 
       await prisma.photo.delete({ where: { id } });
-      await import("@/lib/ai/indexing").then(m => m.queueIndexingJob("DELETE", "PHOTO", id));
+      await enqueueMediaIndexing("DELETE", "PHOTO", id);
 
     } else if (type === "document") {
       const document = await prisma.document.findFirst({
@@ -67,7 +68,7 @@ export async function DELETE(
       filePath = document.filePath;
 
       await prisma.document.delete({ where: { id } });
-      await import("@/lib/ai/indexing").then(m => m.queueIndexingJob("DELETE", "DOCUMENT", id));
+      await enqueueMediaIndexing("DELETE", "DOCUMENT", id);
 
     } else if (type === "audio") {
       const audioClip = await prisma.audioClip.findFirst({
@@ -81,13 +82,16 @@ export async function DELETE(
       filePath = audioClip.filePath;
 
       await prisma.audioClip.delete({ where: { id } });
-      await import("@/lib/ai/indexing").then(m => m.queueIndexingJob("DELETE", "AUDIO", id));
+      await enqueueMediaIndexing("DELETE", "AUDIO", id);
     }
 
     // Delete the actual file from storage
     if (filePath) {
       await deleteFile(filePath);
     }
+
+    // Auto-regenerate story on media deletion
+    await enqueueStoryGeneration(memberId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

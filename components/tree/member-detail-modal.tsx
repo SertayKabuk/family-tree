@@ -40,6 +40,7 @@ import {
   Trash2,
   Loader2,
   X,
+  BookOpen,
 } from "lucide-react";
 import {
   FamilyMember,
@@ -265,6 +266,17 @@ export function MemberDetailModal({
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        onOpenChange(false);
+                        router.push(`/trees/${treeId}/members/${member.id}/story`);
+                      }}
+                    >
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      {t("story.viewStory")}
+                    </Button>
                     {canEdit && (
                       <Button
                         variant="outline"

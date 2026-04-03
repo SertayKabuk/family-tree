@@ -51,6 +51,7 @@ export async function GET(
         documents: { orderBy: { uploadedAt: "desc" } },
         audioClips: { orderBy: { uploadedAt: "desc" } },
         facts: { orderBy: { createdAt: "desc" } },
+        story: true,
       },
     });
 
@@ -138,6 +139,15 @@ export async function PATCH(
       where: { id: treeId },
       data: { updatedAt: new Date() },
     });
+
+    // Auto-regenerate story on member update (skip position-only updates)
+    const hasContentChanges = Object.keys(updateData).some(
+      (k) => k !== "positionX" && k !== "positionY"
+    );
+    if (hasContentChanges) {
+      const { enqueueStoryGeneration } = await import("@/lib/jobs/enqueue");
+      await enqueueStoryGeneration(memberId);
+    }
 
     return NextResponse.json(member);
   } catch (error) {

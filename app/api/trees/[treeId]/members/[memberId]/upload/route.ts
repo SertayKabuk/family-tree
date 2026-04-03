@@ -9,6 +9,7 @@ import {
   FILE_SIZE_LIMITS,
   MediaType,
 } from "@/lib/storage";
+import { enqueueMediaAnalysis, enqueueMediaIndexing, enqueueStoryGeneration } from "@/lib/jobs/enqueue";
 
 // POST /api/trees/[treeId]/members/[memberId]/upload - Upload file for a member
 export async function POST(
@@ -102,13 +103,11 @@ export async function POST(
           filePath: result.filePath,
         },
       });
-      // Queue Index Job (Async)
-      await import("@/lib/ai/indexing").then(m =>
-        m.queueIndexingJob("INDEX", "PHOTO", dbRecord!.id, {
-          filePath: result.filePath,
-          title, description, treeId, memberId
-        })
-      );
+      // Queue Index Job
+      await enqueueMediaIndexing("INDEX", "PHOTO", dbRecord!.id, {
+        filePath: result.filePath,
+        title, description, treeId, memberId
+      });
 
     } else if (type === "documents") {
       dbRecord = await prisma.document.create({
@@ -121,12 +120,10 @@ export async function POST(
           fileSize: file.size,
         },
       });
-      await import("@/lib/ai/indexing").then(m =>
-        m.queueIndexingJob("INDEX", "DOCUMENT", dbRecord!.id, {
-          filePath: result.filePath,
-          title, description, treeId, memberId
-        })
-      );
+      await enqueueMediaIndexing("INDEX", "DOCUMENT", dbRecord!.id, {
+        filePath: result.filePath,
+        title, description, treeId, memberId
+      });
 
     } else if (type === "audio") {
       dbRecord = await prisma.audioClip.create({
@@ -137,14 +134,20 @@ export async function POST(
           filePath: result.filePath,
         },
       });
-      await import("@/lib/ai/indexing").then(m =>
-        m.queueIndexingJob("INDEX", "AUDIO", dbRecord!.id, {
-          filePath: result.filePath,
-          title, description, treeId, memberId
-        })
-      );
+      await enqueueMediaIndexing("INDEX", "AUDIO", dbRecord!.id, {
+        filePath: result.filePath,
+        title, description, treeId, memberId
+      });
     }
 
+
+    // Enqueue media analysis (which chains to story generation on completion)
+    if (dbRecord && type !== "profile") {
+      await enqueueMediaAnalysis(type, dbRecord.id, result.filePath, memberId);
+    } else {
+      // Profile uploads still need story regeneration
+      await enqueueStoryGeneration(memberId);
+    }
 
     return NextResponse.json(
       {

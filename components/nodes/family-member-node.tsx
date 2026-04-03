@@ -5,6 +5,7 @@ import { Handle, Position, NodeProps, Node } from "@xyflow/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { GENDER_COLORS } from "@/lib/tree-colors";
 import { Gender } from "@prisma/client";
+import { BookOpen } from "lucide-react";
 
 export interface FamilyMemberNodeData extends Record<string, unknown> {
   id: string;
@@ -16,6 +17,7 @@ export interface FamilyMemberNodeData extends Record<string, unknown> {
   birthDate?: string | null;
   deathDate?: string | null;
   occupation?: string | null;
+  hasStory?: boolean;
 }
 
 export type FamilyMemberNode = Node<FamilyMemberNodeData, "familyMember">;
@@ -105,6 +107,15 @@ function FamilyMemberNodeComponent({ data, selected }: NodeProps<FamilyMemberNod
               >
                 {data.occupation}
               </p>
+            )}
+
+            {data.hasStory && (
+              <div
+                className="mt-1 flex items-center gap-1"
+                style={{ color: colors.text, opacity: 0.5 }}
+              >
+                <BookOpen className="h-3 w-3" />
+              </div>
             )}
           </div>
         </div>

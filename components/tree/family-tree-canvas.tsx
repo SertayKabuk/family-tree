@@ -91,6 +91,7 @@ function transformMembersToNodes(members: FamilyMember[]): Node<FamilyMemberNode
       birthDate: member.birthDate?.toISOString() ?? null,
       deathDate: member.deathDate?.toISOString() ?? null,
       occupation: member.occupation,
+      hasStory: !!(member as unknown as { story?: { id: string; status: string } }).story,
     },
   }));
 }
@@ -643,7 +644,7 @@ function FamilyTreeCanvasInner({
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
         <Controls
-          className="!bg-background/95 !border-border !shadow-lg [&>button]:!bg-background [&>button]:!border-border [&>button]:!text-foreground [&>button:hover]:!bg-muted"
+          className="!bg-background/95 !border-border !shadow-lg [&_button]:!bg-background [&_button]:!border-border [&_button]:!text-foreground [&_button:hover]:!bg-muted [&_button_svg]:!fill-foreground"
         />
         <MiniMap
           nodeColor={nodeColor}

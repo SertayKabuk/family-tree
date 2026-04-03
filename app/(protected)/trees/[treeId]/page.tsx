@@ -29,6 +29,9 @@ export default async function TreePage({ params }: TreePageProps) {
       owner: { select: { id: true, name: true, email: true } },
       familyMembers: {
         orderBy: { createdAt: "asc" },
+        include: {
+          story: { select: { id: true, status: true } },
+        },
       },
       relationships: true,
       _count: {

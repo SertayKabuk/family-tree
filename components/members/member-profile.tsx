@@ -23,6 +23,7 @@ import {
   Plus,
   Trash2,
   Loader2,
+  BookOpen,
 } from "lucide-react";
 import {
   FamilyMember,
@@ -202,12 +203,20 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
                   </Badge>
                 </div>
 
-                {canEdit && (
-                  <Button variant="outline" size="sm" onClick={() => setEditMemberOpen(true)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    {t("common.edit")}
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  <Link href={`/trees/${treeId}/members/${member.id}/story`}>
+                    <Button variant="outline" size="sm">
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      {t("story.viewStory")}
+                    </Button>
+                  </Link>
+                  {canEdit && (
+                    <Button variant="outline" size="sm" onClick={() => setEditMemberOpen(true)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      {t("common.edit")}
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div className="mt-4 space-y-2 text-sm">

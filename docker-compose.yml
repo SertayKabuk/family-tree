@@ -17,19 +17,70 @@ services:
       timeout: 5s
       retries: 5
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: familytree-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
   app:
-    build: .
+    build:
+      context: .
+      args:
+        DATABASE_URL: ${DATABASE_URL_DOCKER:-postgresql://postgres:postgres@familytree-db:5432/familytree}
+        GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+        AUTH_GOOGLE_ID: ${AUTH_GOOGLE_ID}
+        AUTH_GOOGLE_SECRET: ${AUTH_GOOGLE_SECRET}
+        AUTH_SECRET: ${AUTH_SECRET}
+        GOOGLE_LLM_MODEL: ${GOOGLE_LLM_MODEL:-gemini-3-flash-preview}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+        UPLOAD_DIR: ${UPLOAD_DIR:-/app/uploads}
     container_name: familytree-app
     restart: unless-stopped
     env_file:
       - .env.local
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@familytree-db:5432/familytree
-      AUTH_TRUST_HOST: "true"
+      DATABASE_URL: ${DATABASE_URL_DOCKER:-postgresql://postgres:postgres@familytree-db:5432/familytree}
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_GOOGLE_ID: ${AUTH_GOOGLE_ID}
+      AUTH_GOOGLE_SECRET: ${AUTH_GOOGLE_SECRET}
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-true}
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      UPLOAD_DIR: ${UPLOAD_DIR:-/app/uploads}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT}
+      AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY}
+      AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      GOOGLE_LLM_MODEL: ${GOOGLE_LLM_MODEL}
     volumes:
       - ./uploads:/app/uploads
     ports:
       - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  pgboss-dashboard:
+    image: node:22
+    container_name: familytree-pgboss-dashboard
+    working_dir: /app
+    command: sh -c "npm install -g @pg-boss/dashboard && pg-boss-dashboard"
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@familytree-db:5432/familytree
+      PGBOSS_SCHEMA: pgboss
+      PORT: 3001
+      PGBOSS_DASHBOARD_AUTH_USERNAME: admin
+      PGBOSS_DASHBOARD_AUTH_PASSWORD: admin
+    ports:
+      - "3001:3001"
     depends_on:
       db:
         condition: service_healthy

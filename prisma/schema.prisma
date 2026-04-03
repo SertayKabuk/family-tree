@@ -12,26 +12,9 @@ model SearchIndex {
   id        String                 @id @default(cuid())
   content   String                 @db.Text
   metadata  Json?
-  embedding Unsupported("vector(3072)")
+  embedding Unsupported("vector(1536)")
 
   createdAt DateTime @default(now())
-}
-
-model IndexingJob {
-  id           String   @id @default(cuid())
-  type         String   // INDEX, DELETE
-  resourceType String   // PHOTO, DOCUMENT, AUDIO
-  resourceId   String
-  metadata     Json?    // Store extra info like paths or treeIds
-  
-  status       String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
-  attempts     Int      @default(0)
-  error        String?
-  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@index([status])
 }
 
 
@@ -209,6 +192,9 @@ model FamilyMember {
   audioClips AudioClip[]
   facts      Fact[]
 
+  // AI-generated story
+  story Story?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -283,11 +269,12 @@ model Document {
   memberId String
   member   FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
-  title       String
-  description String?
-  filePath    String // Local file path
-  fileType    String // MIME type
-  fileSize    Int // bytes
+  title         String
+  description   String?
+  aiDescription String? @db.Text // AI-generated analysis of the file content
+  filePath      String // Local file path
+  fileType      String // MIME type
+  fileSize      Int // bytes
 
   uploadedAt DateTime @default(now())
 
@@ -302,6 +289,7 @@ model Photo {
 
   title         String?
   description   String?
+  aiDescription String? @db.Text // AI-generated analysis of the photo
   filePath      String // Local file path
   thumbnailPath String?
 
@@ -319,10 +307,11 @@ model AudioClip {
   memberId String
   member   FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
-  title       String
-  description String?
-  filePath    String // Local file path
-  duration    Int? // seconds
+  title         String
+  description   String?
+  aiDescription String? @db.Text // AI-generated analysis/transcription of the audio
+  filePath      String // Local file path
+  duration      Int? // seconds
 
   recordedAt DateTime?
 
@@ -346,4 +335,28 @@ model Fact {
   updatedAt DateTime @updatedAt
 
   @@index([memberId])
+}
+
+model Story {
+  id String @id @default(cuid())
+
+  memberId String @unique
+  member   FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  content   String  @db.Text
+  audioPath String?
+  status    StoryStatus @default(PENDING)
+  error     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([memberId])
+}
+
+enum StoryStatus {
+  PENDING
+  GENERATING
+  COMPLETED
+  FAILED
 }
