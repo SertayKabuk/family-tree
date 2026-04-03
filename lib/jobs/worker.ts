@@ -9,6 +9,11 @@ import {
 export async function startWorkers() {
   const boss = await getBoss();
 
+  // Ensure queues exist before registering workers (pg-boss v12 requirement)
+  await boss.createQueue(QUEUES.STORY_GENERATION);
+  await boss.createQueue(QUEUES.MEDIA_ANALYSIS);
+  await boss.createQueue(QUEUES.MEDIA_INDEXING);
+
   await boss.work(
     QUEUES.STORY_GENERATION,
     { localConcurrency: 2 },
