@@ -90,7 +90,7 @@ async function analyzeFile(filePath: string, type: "photo" | "document" | "audio
     ],
   });
 
-  const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+  const text = response.text;
   if (!text) throw new Error("No analysis text returned");
 
   return text.trim();

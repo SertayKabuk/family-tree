@@ -153,7 +153,7 @@ ${context}`,
     ],
   });
 
-  const storyText = response.candidates?.[0]?.content?.parts?.[0]?.text;
+  const storyText = response.text;
   if (!storyText) throw new Error("No story text generated");
 
   return storyText.trim();
