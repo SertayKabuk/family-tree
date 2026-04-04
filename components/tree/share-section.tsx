@@ -165,7 +165,7 @@ export function ShareSection({
               <UserPlus className="h-4 w-4 mr-2" />
               {t("sharing.createInvite")}
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto p-4 sm:max-w-lg sm:p-6">
               <DialogHeader>
                 <DialogTitle>{t("sharing.createInviteTitle")}</DialogTitle>
                 <DialogDescription>
@@ -205,15 +205,15 @@ export function ShareSection({
                 <div className="space-y-4 py-4">
                   <div className="grid gap-2">
                     <Label>{t("sharing.shareLink")}</Label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row">
                       <Input value={inviteLink.url} readOnly />
-                      <Button variant="outline" size="icon" onClick={copyLink}>
+                      <Button variant="outline" size="icon" onClick={copyLink} className="w-full sm:w-9 sm:shrink-0">
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <Button
                       variant="outline"
                       className="flex-1"
@@ -236,12 +236,12 @@ export function ShareSection({
 
               <DialogFooter>
                 {!inviteLink ? (
-                  <Button onClick={createInvite} disabled={creating}>
+                  <Button onClick={createInvite} disabled={creating} className="w-full sm:w-auto">
                     {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     {t("sharing.generateLink")}
                   </Button>
                 ) : (
-                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto">
                     {t("common.done")}
                   </Button>
                 )}

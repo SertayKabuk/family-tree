@@ -17,6 +17,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -41,6 +47,7 @@ import {
   Loader2,
   X,
   BookOpen,
+  MoreVertical,
 } from "lucide-react";
 import {
   FamilyMember,
@@ -207,6 +214,10 @@ export function MemberDetailSheet({
   const colors = GENDER_COLORS[member.gender];
   const initials = `${member.firstName[0]}${member.lastName?.[0] || ""}`.toUpperCase();
   const fullName = `${member.firstName}${member.lastName ? ` ${member.lastName}` : ""}`;
+  const openStoryPage = () => {
+    onOpenChange(false);
+    router.push(`/trees/${treeId}/members/${member.id}/story`);
+  };
 
   const formatDate = (date: Date | string | null) => {
     if (!date) return "";
@@ -248,7 +259,7 @@ export function MemberDetailSheet({
       >
         {/* Header with Avatar and Basic Info */}
         <div className="sticky top-0 z-10 bg-background border-b">
-          <SheetHeader className="p-6 pb-4">
+          <SheetHeader className="p-4 pb-4 sm:p-6 sm:pb-4">
             <div className="flex items-start gap-4">
               <div className="relative group shrink-0">
                 <Avatar
@@ -280,8 +291,8 @@ export function MemberDetailSheet({
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
                     <SheetTitle className="text-xl">{fullName}</SheetTitle>
                     {member.nickname && (
                       <SheetDescription>&ldquo;{member.nickname}&rdquo;</SheetDescription>
@@ -295,32 +306,61 @@ export function MemberDetailSheet({
                     </Badge>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        onOpenChange(false);
-                        router.push(`/trees/${treeId}/members/${member.id}/story`);
-                      }}
-                    >
-                      <BookOpen className="h-4 w-4 mr-2" />
-                      {t("story.viewStory")}
-                    </Button>
-                    {canEdit && (
+                  <div className="flex shrink-0 items-center gap-2">
+                    <div className="hidden items-center gap-2 sm:flex">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setEditMemberOpen(true)}
+                        onClick={openStoryPage}
                       >
-                        <Edit className="h-4 w-4 mr-2" />
-                        {t("common.edit")}
+                        <BookOpen className="mr-2 h-4 w-4" />
+                        {t("story.viewStory")}
                       </Button>
-                    )}
+                      {canEdit && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditMemberOpen(true)}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          {t("common.edit")}
+                        </Button>
+                      )}
+                    </div>
+                    <div className="sm:hidden">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9"
+                              aria-label={t("common.moreActions")}
+                            />
+                          }
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48" sideOffset={8}>
+                          <DropdownMenuItem onClick={openStoryPage}>
+                            <BookOpen className="mr-2 h-4 w-4" />
+                            {t("story.viewStory")}
+                          </DropdownMenuItem>
+                          {canEdit && (
+                            <DropdownMenuItem onClick={() => setEditMemberOpen(true)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              {t("common.edit")}
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => onOpenChange(false)}
+                      className="h-9 w-9"
+                      aria-label={t("common.close")}
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -361,7 +401,7 @@ export function MemberDetailSheet({
         </div>
 
         {/* Content */}
-        <div className="p-6 pt-4">
+        <div className="p-4 pt-4 sm:p-6 sm:pt-4">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

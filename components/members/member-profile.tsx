@@ -11,6 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   ChevronLeft,
   Calendar,
   Briefcase,
@@ -24,6 +30,7 @@ import {
   Trash2,
   Loader2,
   BookOpen,
+  MoreVertical,
 } from "lucide-react";
 import {
   FamilyMember,
@@ -209,7 +216,7 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
 
             <div className="flex-1 text-center sm:text-left">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div>
+                <div className="min-w-0">
                   <h1 className="text-2xl font-bold">{fullName}</h1>
                   {member.nickname && (
                     <p className="text-muted-foreground">&ldquo;{member.nickname}&rdquo;</p>
@@ -223,19 +230,48 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
                   </Badge>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="hidden gap-2 sm:flex">
                   <Link href={`/trees/${treeId}/members/${member.id}/story`}>
                     <Button variant="outline" size="sm">
-                      <BookOpen className="h-4 w-4 mr-2" />
+                      <BookOpen className="mr-2 h-4 w-4" />
                       {t("story.viewStory")}
                     </Button>
                   </Link>
                   {canEdit && (
                     <Button variant="outline" size="sm" onClick={() => setEditMemberOpen(true)}>
-                      <Edit className="h-4 w-4 mr-2" />
+                      <Edit className="mr-2 h-4 w-4" />
                       {t("common.edit")}
                     </Button>
                   )}
+                </div>
+
+                <div className="flex justify-center sm:hidden">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-9 w-9"
+                          aria-label={t("common.moreActions")}
+                        />
+                      }
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem render={<Link href={`/trees/${treeId}/members/${member.id}/story`} />}>
+                        <BookOpen className="mr-2 h-4 w-4" />
+                        {t("story.viewStory")}
+                      </DropdownMenuItem>
+                      {canEdit && (
+                        <DropdownMenuItem onClick={() => setEditMemberOpen(true)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          {t("common.edit")}
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
 
@@ -275,7 +311,7 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
               <Separator className="my-6" />
               <div>
                 <h3 className="font-semibold mb-2">{t("profile.biography")}</h3>
-                <p className="text-muted-foreground whitespace-pre-wrap">{"member.bio"}</p>
+                <p className="text-muted-foreground whitespace-pre-wrap">{member.bio}</p>
               </div>
             </>
           )}
@@ -529,7 +565,6 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
                 <div className="space-y-4">
                   {member.facts.map((fact) => (
                     <div key={fact.id} className="p-4 rounded-lg border">
-                      <p style={{color:'red',fontSize:'20px',fontWeight:'bold'}}>BUTTONS TEST - IF YOU SEE THIS, CODE IS LOADED</p>
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <h4 className="font-semibold">{fact.title}</h4>

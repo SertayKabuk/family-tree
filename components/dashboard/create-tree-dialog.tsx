@@ -68,7 +68,7 @@ export function CreateTreeDialog() {
         <Plus className="h-4 w-4 mr-2" />
         {t("dashboard.newTree")}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto p-4 sm:max-w-lg sm:p-6">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{t("createTree.title")}</DialogTitle>

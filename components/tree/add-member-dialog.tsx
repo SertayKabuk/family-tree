@@ -101,7 +101,7 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto p-4 sm:max-w-lg sm:p-6">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{t("addMember.title")}</DialogTitle>
@@ -111,7 +111,7 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="firstName">{t("addMember.firstNameRequired")}</Label>
                 <Input
@@ -138,7 +138,7 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="nickname">{t("addMember.nickname")}</Label>
                 <Input
@@ -178,7 +178,7 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="birthDate">{t("addMember.birthDate")}</Label>
                 <Input
@@ -205,7 +205,7 @@ export function AddMemberDialog({ treeId, open, onOpenChange }: AddMemberDialogP
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="birthPlace">{t("addMember.birthPlace")}</Label>
                 <Input

@@ -10,6 +10,7 @@
     "uploading": "Yükleniyor...",
     "done": "Tamam",
     "close": "Kapat",
+    "moreActions": "Diğer işlemler",
     "back": "Geri",
     "next": "İleri",
     "yes": "Evet",
@@ -503,11 +504,20 @@
     "dbCaption": "Aile veritabanınızı sorgulayabilir",
     "emptyTitle": "Soy ağacınız hakkında her şeyi sorabilirsiniz",
     "emptyDescription": "Belgeleri, fotoğrafları, ses kayıtlarını arayabilir ve veritabanını doğrudan sorgulayabilirim.",
+    "emptyImportHint": "Türk e-Devlet soy ağacı görseli de yükleyebilirsiniz; önce güvenli bir içe aktarma taslağı hazırlayacağım.",
     "thinking": "Düşünüyor\u2026",
+    "analyzingImage": "Soy ağacı görseli analiz ediliyor\u2026",
     "placeholder": "Soy ağacınız hakkında sorun\u2026 (Göndermek için Enter, yeni satır için Shift+Enter)",
+    "attachImage": "Soy ağacı görseli ekle",
+    "removeAttachedImage": "Ekli görseli kaldır",
+    "attachedImage": "Ekli görsel: {name}",
+    "defaultImportPrompt": "Lütfen bu Türk e-Devlet soy ağacı görselini inceleyip bir içe aktarma taslağı hazırla.",
+    "importFailed": "Bu görseli analiz edemedim. Lütfen başka bir dosya deneyin.",
     "tools": {
       "execute_sql": "Veritabanı sorgulanıyor",
-      "search_family_archive": "Arşiv aranıyor"
+      "search_family_archive": "Arşiv aranıyor",
+      "review_import_draft": "İçe aktarma taslağı inceleniyor",
+      "commit_import_draft": "Soy ağacı içe aktarılıyor"
     },
     "suggestions": {
       "oldest": "En yaşlı üyeler kimler?",

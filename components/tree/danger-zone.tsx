@@ -69,8 +69,8 @@ export function DangerZone({ treeId, treeName }: DangerZoneProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-between p-4 rounded-lg border border-destructive/30 bg-destructive/5">
-          <div>
+        <div className="flex flex-col gap-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
             <p className="font-medium">{t("dangerZone.deleteTree")}</p>
             <p className="text-sm text-muted-foreground">
               {t("dangerZone.deleteTreeDescription")}
@@ -81,7 +81,7 @@ export function DangerZone({ treeId, treeName }: DangerZoneProps) {
             setDialogOpen(open);
             if (!open) setConfirmName("");
           }}>
-            <AlertDialogTrigger render={<Button variant="destructive" />}>
+            <AlertDialogTrigger render={<Button variant="destructive" className="w-full sm:w-auto" />}>
               <Trash2 className="h-4 w-4 mr-2" />
               {t("dangerZone.deleteButton")}
             </AlertDialogTrigger>

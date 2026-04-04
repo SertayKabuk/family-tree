@@ -10,6 +10,7 @@
     "uploading": "Uploading...",
     "done": "Done",
     "close": "Close",
+    "moreActions": "More actions",
     "back": "Back",
     "next": "Next",
     "yes": "Yes",
@@ -503,11 +504,20 @@
     "dbCaption": "Can query your family database",
     "emptyTitle": "Ask anything about your family tree",
     "emptyDescription": "I can search documents, photos, audio — and query the database directly.",
+    "emptyImportHint": "You can also upload a Turkish e-Devlet family tree image and I’ll prepare a safe import draft.",
     "thinking": "Thinking\u2026",
+    "analyzingImage": "Analyzing family tree image\u2026",
     "placeholder": "Ask about your family tree\u2026 (Enter to send, Shift+Enter for newline)",
+    "attachImage": "Attach family tree image",
+    "removeAttachedImage": "Remove attached image",
+    "attachedImage": "Attached image: {name}",
+    "defaultImportPrompt": "Please review this Turkish e-Devlet family tree image and prepare an import draft.",
+    "importFailed": "I couldn't analyze that image. Please try another file.",
     "tools": {
       "execute_sql": "Querying database",
-      "search_family_archive": "Searching archive"
+      "search_family_archive": "Searching archive",
+      "review_import_draft": "Reviewing import draft",
+      "commit_import_draft": "Importing family tree"
     },
     "suggestions": {
       "oldest": "Who are the oldest members?",

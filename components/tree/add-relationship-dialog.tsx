@@ -194,7 +194,7 @@ export function AddRelationshipDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto p-4 sm:max-w-lg sm:p-6">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{t("relationships.title")}</DialogTitle>
@@ -205,7 +205,7 @@ export function AddRelationshipDialog({
 
           <div className="grid gap-4 py-4">
             <div className="rounded-lg bg-muted p-4">
-              <p className="text-sm text-center">
+              <p className="text-center text-sm break-words">
                 <span className="font-semibold">
                   {fromMember?.firstName} {fromMember?.lastName}
                 </span>

@@ -132,7 +132,7 @@ export function MediaUploadDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto p-4 sm:max-w-lg sm:p-6">
         <DialogHeader>
           <DialogTitle>{dialogCopy.title}</DialogTitle>
           <DialogDescription>{dialogCopy.description}</DialogDescription>
@@ -158,7 +158,7 @@ export function MediaUploadDialog({
               </p>
             </div>
           ) : (
-            <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/50">
+            <div className="flex flex-col gap-3 rounded-lg border bg-muted/50 p-3 sm:flex-row sm:items-center">
               <Icon className="h-8 w-8 text-muted-foreground" />
               <div className="flex-1 min-w-0">
                 <p className="font-medium truncate">{selectedFile.name}</p>
@@ -170,6 +170,7 @@ export function MediaUploadDialog({
                 variant="ghost"
                 size="icon"
                 onClick={() => setSelectedFile(null)}
+                className="self-end sm:self-auto"
               >
                 <X className="h-4 w-4" />
               </Button>

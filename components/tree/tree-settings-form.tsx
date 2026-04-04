@@ -88,8 +88,8 @@ export function TreeSettingsForm({ tree }: TreeSettingsFormProps) {
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
+          <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0 space-y-0.5">
               <Label htmlFor="public">{t("settings.publicTree")}</Label>
               <p className="text-sm text-muted-foreground">
                 {t("settings.publicTreeDescription")}
@@ -103,7 +103,7 @@ export function TreeSettingsForm({ tree }: TreeSettingsFormProps) {
             />
           </div>
 
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading} className="w-full sm:w-auto">
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             {t("settings.saveChanges")}
           </Button>

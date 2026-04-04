@@ -3,12 +3,17 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/permissions";
 import {
   uploadFile,
+  optimizeImageUpload,
   isValidImageType,
   isValidDocumentType,
   isValidAudioType,
-  FILE_SIZE_LIMITS,
   MediaType,
 } from "@/lib/storage";
+import {
+  FILE_SIZE_LIMITS,
+  IMAGE_SOURCE_FILE_SIZE_LIMITS,
+  formatSizeLimitMb,
+} from "@/lib/upload-constraints";
 import { enqueueMediaAnalysis, enqueueMediaIndexing, requestStoryGeneration } from "@/lib/jobs/enqueue";
 
 // POST /api/trees/[treeId]/members/[memberId]/upload - Upload file for a member
@@ -47,15 +52,6 @@ export async function POST(
       return NextResponse.json({ error: "Invalid type" }, { status: 400 });
     }
 
-    // Validate file size
-    const sizeLimit = FILE_SIZE_LIMITS[type];
-    if (file.size > sizeLimit) {
-      return NextResponse.json(
-        { error: `File too large. Maximum size is ${sizeLimit / (1024 * 1024)}MB` },
-        { status: 400 }
-      );
-    }
-
     // Validate file type
     if (type === "profile" || type === "photos") {
       if (!isValidImageType(file.type)) {
@@ -80,8 +76,39 @@ export async function POST(
       }
     }
 
+    let uploadSource: File | Awaited<ReturnType<typeof optimizeImageUpload>> = file;
+
+    if (type === "profile" || type === "photos") {
+      const sourceSizeLimit = IMAGE_SOURCE_FILE_SIZE_LIMITS[type];
+      if (file.size > sourceSizeLimit) {
+        return NextResponse.json(
+          {
+            error: `File too large. Maximum original size before optimization is ${formatSizeLimitMb(sourceSizeLimit)}MB.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      try {
+        uploadSource = await optimizeImageUpload(file, type);
+      } catch (error) {
+        return NextResponse.json(
+          { error: error instanceof Error ? error.message : "Image optimization failed" },
+          { status: 400 }
+        );
+      }
+    } else {
+      const sizeLimit = FILE_SIZE_LIMITS[type];
+      if (file.size > sizeLimit) {
+        return NextResponse.json(
+          { error: `File too large. Maximum size is ${formatSizeLimitMb(sizeLimit)}MB` },
+          { status: 400 }
+        );
+      }
+    }
+
     // Upload the file
-    const result = await uploadFile(treeId, memberId, type, file);
+    const result = await uploadFile(treeId, memberId, type, uploadSource);
 
     // Save to database based on type
     let dbRecord: { id: string } | null = null;

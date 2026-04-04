@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getCheckpointerPool, getAgentStore } from "@/lib/ai/store";
+import { getCheckpointer, getCheckpointerPool, getAgentStore } from "@/lib/ai/store";
 
 export async function GET(req: Request) {
   const session = await auth();
@@ -11,6 +11,9 @@ export async function GET(req: Request) {
   if (!treeId) return new Response("Missing treeId", { status: 400 });
 
   const prefix = `${userId}-${treeId}`;
+
+  // Ensure LangGraph checkpoint tables exist before querying them directly.
+  await getCheckpointer();
 
   // Query distinct thread_ids with their latest checkpoint timestamp via raw SQL
   const pool = await getCheckpointerPool();

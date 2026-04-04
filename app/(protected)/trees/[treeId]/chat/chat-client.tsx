@@ -28,6 +28,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Trash2,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -45,7 +47,11 @@ interface ChatThread {
   updatedAt: string | null;
 }
 
-type ToolKey = "execute_sql" | "search_family_archive";
+type ToolKey =
+  | "execute_sql"
+  | "search_family_archive"
+  | "review_import_draft"
+  | "commit_import_draft";
 
 type StreamEvent =
   | { type: "token"; content: string }
@@ -54,20 +60,41 @@ type StreamEvent =
   | { type: "done" }
   | { type: "error"; message: string };
 
-const TOOL_ICONS: Record<ToolKey, "db" | "search"> = {
+const TOOL_ICONS: Record<ToolKey, "db" | "search" | "image" | "import"> = {
   execute_sql: "db",
   search_family_archive: "search",
+  review_import_draft: "image",
+  commit_import_draft: "import",
 };
 
 function ToolIndicator({ name, label }: { name: string; label: string }) {
   const icon = TOOL_ICONS[name as ToolKey] ?? "search";
-  const Icon = icon === "db" ? Database : Search;
+  const Icon =
+    icon === "db"
+      ? Database
+      : icon === "image"
+        ? ImagePlus
+        : icon === "import"
+          ? Plus
+          : Search;
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground animate-pulse">
       <Icon className="h-3 w-3" />
       {label}…
     </span>
   );
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  if (bytes >= 1024) {
+    return `${Math.round(bytes / 1024)} KB`;
+  }
+
+  return `${bytes} B`;
 }
 
 function formatRelativeTime(iso: string | null): string {
@@ -102,12 +129,16 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isPreparingImport, setIsPreparingImport] = useState(false);
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [activeImportDraftId, setActiveImportDraftId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadThreads = useCallback(
     async ({ showLoading = true }: { showLoading?: boolean } = {}) => {
@@ -166,12 +197,20 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
     const newId = crypto.randomUUID();
     setThreadId(newId);
     setMessages([]);
+    setSelectedImage(null);
+    setInput("");
+    setActiveImportDraftId(null);
+    setActiveTool(null);
     router.replace(`/trees/${treeId}/chat?thread=${newId}`);
   }, [treeId, router]);
 
   const selectThread = useCallback(
     (id: string) => {
       setThreadId(id);
+      setSelectedImage(null);
+      setInput("");
+      setActiveImportDraftId(null);
+      setActiveTool(null);
       router.replace(`/trees/${treeId}/chat?thread=${id}`);
     },
     [treeId, router]
@@ -201,6 +240,8 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
         setThreadId(null);
         setMessages([]);
         setActiveTool(null);
+        setActiveImportDraftId(null);
+        setSelectedImage(null);
         router.replace(`/trees/${treeId}/chat`);
       }
 
@@ -215,7 +256,8 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
 
   const send = useCallback(async () => {
     const text = input.trim();
-    if (!text || isStreaming) return;
+    const image = selectedImage;
+    if ((!text && !image) || isStreaming || isPreparingImport || messagesLoading) return;
 
     // If no thread yet, create one now
     const currentThreadId = threadId ?? crypto.randomUUID();
@@ -224,24 +266,56 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
       router.replace(`/trees/${treeId}/chat?thread=${currentThreadId}`);
     }
 
-    const userMessage: Message = { role: "user", content: text };
-    const nextMessages = [...messages, userMessage];
-
-    setMessages(nextMessages);
-    setInput("");
-    setIsStreaming(true);
-    setActiveTool(null);
-
-    // Add empty assistant placeholder
-    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
-
-    abortRef.current = new AbortController();
+    let didStartChatRequest = false;
+    let importDraftId = activeImportDraftId;
+    const messageText = text || t("defaultImportPrompt");
 
     try {
+      if (image) {
+        setIsPreparingImport(true);
+
+        const formData = new FormData();
+        formData.set("file", image);
+        formData.set("threadId", currentThreadId);
+
+        const importResponse = await fetch(`/api/trees/${treeId}/imports/image`, {
+          method: "POST",
+          body: formData,
+        });
+
+        const importPayload = (await importResponse.json().catch(() => null)) as
+          | { draftId?: string; error?: string }
+          | null;
+
+        if (!importResponse.ok || !importPayload?.draftId) {
+          throw new Error(importPayload?.error ?? t("importFailed"));
+        }
+
+        importDraftId = importPayload.draftId;
+        setActiveImportDraftId(importPayload.draftId);
+      }
+
+      const userMessage: Message = { role: "user", content: messageText };
+      const nextMessages = [...messages, userMessage];
+
+      setMessages([...nextMessages, { role: "assistant", content: "" }]);
+      setInput("");
+      setSelectedImage(null);
+      setIsStreaming(true);
+      setActiveTool(null);
+      didStartChatRequest = true;
+
+      abortRef.current = new AbortController();
+
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages, treeId, threadId: currentThreadId }),
+        body: JSON.stringify({
+          messages: nextMessages,
+          treeId,
+          threadId: currentThreadId,
+          importDraftId,
+        }),
         signal: abortRef.current.signal,
       });
 
@@ -307,6 +381,12 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
       void loadThreads({ showLoading: false });
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") return;
+
+      if (!didStartChatRequest) {
+        toast.error(err instanceof Error ? err.message : t("error"));
+        return;
+      }
+
       setMessages((prev) => {
         const updated = [...prev];
         updated[updated.length - 1] = {
@@ -316,11 +396,31 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
         return updated;
       });
     } finally {
+      setIsPreparingImport(false);
       setIsStreaming(false);
       setActiveTool(null);
       abortRef.current = null;
     }
-  }, [input, isStreaming, loadThreads, messages, treeId, threadId, router, t]);
+  }, [
+    activeImportDraftId,
+    input,
+    isPreparingImport,
+    isStreaming,
+    loadThreads,
+    messages,
+    messagesLoading,
+    router,
+    selectedImage,
+    t,
+    threadId,
+    treeId,
+  ]);
+
+  const handleSelectImage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    setSelectedImage(file);
+    event.target.value = "";
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -409,7 +509,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
                         threadId === thread.id && "sm:opacity-100"
                       )}
                       disabled={
-                        isStreaming || messagesLoading || deletingThreadId === thread.id
+                        isStreaming || isPreparingImport || messagesLoading || deletingThreadId === thread.id
                       }
                       onClick={() => setThreadToDelete(thread)}
                       title={t("threads.delete")}
@@ -492,6 +592,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
               <div>
                 <p className="font-medium text-foreground">{t("emptyTitle")}</p>
                 <p className="text-sm mt-1">{t("emptyDescription")}</p>
+                  <p className="text-xs mt-2">{t("emptyImportHint")}</p>
               </div>
               <div className="flex flex-wrap gap-2 justify-center mt-2">
                 {(["oldest", "marriages", "count", "before1950"] as const).map((key) => {
@@ -578,29 +679,81 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
 
         {/* Input */}
         <div className="border-t bg-background px-4 py-3 shrink-0">
-          <div className="max-w-3xl mx-auto flex gap-2 items-end">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={t("placeholder")}
-              rows={1}
-              disabled={isStreaming || messagesLoading}
-              className="flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 min-h-[40px] max-h-[160px] overflow-y-auto"
+          <div className="max-w-3xl mx-auto space-y-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              className="hidden"
+              onChange={handleSelectImage}
             />
-            <Button
-              onClick={send}
-              disabled={!input.trim() || isStreaming || messagesLoading}
-              size="icon"
-              className="shrink-0 h-10 w-10"
-            >
-              {isStreaming ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
+
+            {selectedImage && (
+              <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/40 px-3 py-2 text-xs">
+                <div className="min-w-0 flex items-center gap-2 text-muted-foreground">
+                  <ImagePlus className="h-4 w-4 shrink-0 text-primary" />
+                  <span className="truncate">
+                    {t("attachedImage", { name: selectedImage.name })}
+                  </span>
+                  <span className="shrink-0">({formatFileSize(selectedImage.size)})</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0"
+                  onClick={() => setSelectedImage(null)}
+                  disabled={isStreaming || isPreparingImport || messagesLoading}
+                  title={t("removeAttachedImage")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            <div className="flex gap-2 items-end">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="shrink-0 h-10 w-10"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isStreaming || isPreparingImport || messagesLoading}
+                title={t("attachImage")}
+              >
+                <ImagePlus className="h-4 w-4" />
+              </Button>
+
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={t("placeholder")}
+                rows={1}
+                disabled={isStreaming || isPreparingImport || messagesLoading}
+                className="flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 min-h-[40px] max-h-[160px] overflow-y-auto"
+              />
+              <Button
+                onClick={send}
+                disabled={(!input.trim() && !selectedImage) || isStreaming || isPreparingImport || messagesLoading}
+                size="icon"
+                className="shrink-0 h-10 w-10"
+              >
+                {isStreaming || isPreparingImport ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+
+            {isPreparingImport && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>{t("analyzingImage")}</span>
+              </div>
+            )}
           </div>
         </div>
 

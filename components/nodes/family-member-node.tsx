@@ -27,6 +27,10 @@ function FamilyMemberNodeComponent({ data, selected }: NodeProps<FamilyMemberNod
   const initials = `${data.firstName[0]}${data.lastName?.[0] || ""}`.toUpperCase();
   const isDeceased = !!data.deathDate;
   const displayName = data.nickname || data.firstName;
+  const verticalHandleClassName =
+    "!h-5 !w-5 sm:!h-3 sm:!w-3 !bg-gray-400 !border-[3px] !border-white !shadow-sm";
+  const horizontalHandleClassName =
+    "!h-5 !w-5 sm:!h-3 sm:!w-3 !bg-amber-400 !border-[3px] !border-white !shadow-sm";
 
   const formatYear = (dateStr?: string | null) => {
     if (!dateStr) return null;
@@ -42,7 +46,7 @@ function FamilyMemberNodeComponent({ data, selected }: NodeProps<FamilyMemberNod
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-3 !h-3 !bg-gray-400 !border-2 !border-white"
+        className={verticalHandleClassName}
       />
 
       <div
@@ -125,7 +129,7 @@ function FamilyMemberNodeComponent({ data, selected }: NodeProps<FamilyMemberNod
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-3 !h-3 !bg-gray-400 !border-2 !border-white"
+        className={verticalHandleClassName}
       />
 
       {/* Left handles for spouse/sibling connections (both directions) */}
@@ -133,13 +137,13 @@ function FamilyMemberNodeComponent({ data, selected }: NodeProps<FamilyMemberNod
         type="source"
         position={Position.Left}
         id="left-source"
-        className="!w-3 !h-3 !bg-amber-400 !border-2 !border-white"
+        className={horizontalHandleClassName}
       />
       <Handle
         type="target"
         position={Position.Left}
         id="left-target"
-        className="!w-3 !h-3 !bg-amber-400 !border-2 !border-white"
+        className={horizontalHandleClassName}
       />
 
       {/* Right handles for spouse/sibling connections (both directions) */}
@@ -147,13 +151,13 @@ function FamilyMemberNodeComponent({ data, selected }: NodeProps<FamilyMemberNod
         type="source"
         position={Position.Right}
         id="right-source"
-        className="!w-3 !h-3 !bg-amber-400 !border-2 !border-white"
+        className={horizontalHandleClassName}
       />
       <Handle
         type="target"
         position={Position.Right}
         id="right-target"
-        className="!w-3 !h-3 !bg-amber-400 !border-2 !border-white"
+        className={horizontalHandleClassName}
       />
     </>
   );

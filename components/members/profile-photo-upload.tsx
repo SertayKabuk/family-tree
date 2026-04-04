@@ -16,6 +16,10 @@ import { Loader2, Upload, Camera, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Gender } from "@prisma/client";
 import { GENDER_COLORS } from "@/lib/tree-colors";
+import {
+  IMAGE_SOURCE_FILE_SIZE_LIMITS,
+  formatSizeLimitMb,
+} from "@/lib/upload-constraints";
 
 interface ProfilePhotoUploadProps {
   treeId: string;
@@ -59,9 +63,11 @@ export function ProfilePhotoUpload({
         return;
       }
 
-      // Validate file size (5MB max)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image must be less than 5MB");
+      // Validate file size before server-side optimization
+      if (file.size > IMAGE_SOURCE_FILE_SIZE_LIMITS.profile) {
+        toast.error(
+          `Image must be less than ${formatSizeLimitMb(IMAGE_SOURCE_FILE_SIZE_LIMITS.profile)}MB before optimization`
+        );
         return;
       }
 

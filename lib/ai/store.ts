@@ -6,7 +6,9 @@ import { env } from "@/lib/env";
 
 const globalForStore = globalThis as unknown as {
   agentStore?: PostgresStore;
+  agentStorePromise?: Promise<PostgresStore>;
   checkpointer?: PostgresSaver;
+  checkpointerPromise?: Promise<PostgresSaver>;
   checkpointerPool?: pg.Pool;
 };
 
@@ -16,19 +18,32 @@ const geminiEmbeddings = {
 };
 
 export async function getAgentStore(): Promise<PostgresStore> {
-  if (!globalForStore.agentStore) {
-    globalForStore.agentStore = new PostgresStore({
-      connectionOptions: env.DATABASE_URL,
-      ensureTables: true,
-      index: {
-        dims: 1536,
-        embed: geminiEmbeddings,
-        distanceMetric: "cosine",
-      },
-    });
-    await globalForStore.agentStore.setup();
+  if (globalForStore.agentStore) {
+    return globalForStore.agentStore;
   }
-  return globalForStore.agentStore;
+
+  if (!globalForStore.agentStorePromise) {
+    globalForStore.agentStorePromise = (async () => {
+      const store = new PostgresStore({
+        connectionOptions: env.DATABASE_URL,
+        ensureTables: true,
+        index: {
+          dims: 1536,
+          embed: geminiEmbeddings,
+          distanceMetric: "cosine",
+        },
+      });
+
+      await store.setup();
+      globalForStore.agentStore = store;
+      return store;
+    })().catch((error) => {
+      globalForStore.agentStorePromise = undefined;
+      throw error;
+    });
+  }
+
+  return globalForStore.agentStorePromise;
 }
 
 export async function getCheckpointerPool(): Promise<pg.Pool> {
@@ -41,10 +56,23 @@ export async function getCheckpointerPool(): Promise<pg.Pool> {
 }
 
 export async function getCheckpointer(): Promise<PostgresSaver> {
-  if (!globalForStore.checkpointer) {
-    const pool = await getCheckpointerPool();
-    globalForStore.checkpointer = new PostgresSaver(pool);
-    await globalForStore.checkpointer.setup();
+  if (globalForStore.checkpointer) {
+    return globalForStore.checkpointer;
   }
-  return globalForStore.checkpointer;
+
+  if (!globalForStore.checkpointerPromise) {
+    globalForStore.checkpointerPromise = (async () => {
+      const pool = await getCheckpointerPool();
+      const checkpointer = new PostgresSaver(pool);
+
+      await checkpointer.setup();
+      globalForStore.checkpointer = checkpointer;
+      return checkpointer;
+    })().catch((error) => {
+      globalForStore.checkpointerPromise = undefined;
+      throw error;
+    });
+  }
+
+  return globalForStore.checkpointerPromise;
 }

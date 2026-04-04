@@ -99,7 +99,7 @@ export function EditMemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto p-4 sm:max-w-lg sm:p-6">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{t("editMember.title")}</DialogTitle>
@@ -109,7 +109,7 @@ export function EditMemberDialog({
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="edit-firstName">{t("editMember.firstName")} *</Label>
                 <Input
@@ -130,7 +130,7 @@ export function EditMemberDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="edit-nickname">{t("editMember.nickname")}</Label>
                 <Input
@@ -160,7 +160,7 @@ export function EditMemberDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="edit-birthDate">{t("editMember.birthDate")}</Label>
                 <Input
@@ -183,7 +183,7 @@ export function EditMemberDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="edit-birthPlace">{t("editMember.birthPlace")}</Label>
                 <Input

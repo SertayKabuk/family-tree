@@ -10,16 +10,63 @@ import { searchVectors } from "@/lib/ai/vector-store";
 import { createSqlTools, buildSqlSystemPrompt } from "@/lib/ai/sql-tools";
 import { defaultLocale, type Locale } from "@/i18n/config";
 import { env } from "@/lib/env";
+import { requirePermission } from "@/lib/permissions";
+import { createFamilyTreeImportTools } from "@/lib/ai/family-tree-import-tools";
+import { resolveActiveImportDraft } from "@/lib/ai/family-tree-import-store";
+import { buildImportDraftSummary } from "@/lib/ai/family-tree-import";
 
 const LANGUAGE_INSTRUCTION: Record<Locale, string> = {
   en: "Always respond in English.",
   tr: "Her zaman Türkçe yanıt ver.",
 };
 
+const chatRequestSchema = z.object({
+  treeId: z.string().min(1),
+  threadId: z.string().nullable().optional(),
+  importDraftId: z.string().nullable().optional(),
+  messages: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant", "system"]),
+        content: z.string(),
+      })
+    )
+    .min(1),
+});
+
 export async function POST(req: Request) {
+  const body = chatRequestSchema.safeParse(await req.json());
+
+  if (!body.success) {
+    return Response.json(
+      { error: "Invalid chat request", details: body.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const { messages, treeId, threadId: clientThreadId, importDraftId: requestedImportDraftId } = body.data;
   const session = await auth();
-  const { messages, treeId, threadId: clientThreadId } = await req.json();
-  const userId = session?.user?.id ?? "anonymous";
+
+  if (!session?.user?.id) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    await requirePermission(treeId, "view");
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "Unauthorized") {
+        return Response.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      if (error.message === "Forbidden") {
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const userId = session.user.id;
 
   // Resolve thread ID — generate a new one if this is the first message in a session
   const threadId: string = clientThreadId ?? crypto.randomUUID();
@@ -35,10 +82,17 @@ export async function POST(req: Request) {
 
   const languageInstruction = LANGUAGE_INSTRUCTION[locale] ?? LANGUAGE_INSTRUCTION[defaultLocale];
 
-  const [store, checkpointer] = await Promise.all([getAgentStore(), getCheckpointer()]);
+  const [store, checkpointer, activeImportDraft] = await Promise.all([
+    getAgentStore(),
+    getCheckpointer(),
+    resolveActiveImportDraft(userId, treeId, {
+      draftId: requestedImportDraftId,
+      threadId,
+    }),
+  ]);
 
   // Persist thread title on first message (non-blocking, best-effort)
-  const firstUserMsg = (messages as { role: string; content: string }[]).find(
+  const firstUserMsg = messages.find(
     (m) => m.role === "user"
   );
   if (firstUserMsg) {
@@ -69,6 +123,29 @@ export async function POST(req: Request) {
 
   const sqlTools = createSqlTools(treeId);
   const sqlInstructions = buildSqlSystemPrompt(treeId);
+  const importTools = createFamilyTreeImportTools({
+    treeId,
+    userId,
+    threadId,
+    importDraftId: activeImportDraft?.id ?? requestedImportDraftId ?? null,
+    messages,
+  });
+
+  const activeImportDraftInstructions = activeImportDraft
+    ? `
+
+## Active e-Devlet Import Draft
+
+An image-based family tree import draft is available for this chat.
+- Draft ID: ${activeImportDraft.id}
+- Status: ${activeImportDraft.status}
+
+Use the \`review_import_draft\` tool before discussing the uploaded image in detail.
+Never call \`commit_import_draft\` unless the user's latest message explicitly confirms that the import should proceed.
+
+Draft summary:
+${buildImportDraftSummary(activeImportDraft)}`
+    : "";
 
   const model = new ChatGoogle({
     model: env.GOOGLE_LLM_MODEL,
@@ -77,14 +154,14 @@ export async function POST(req: Request) {
 
   const agent = createDeepAgent({
     model,
-    tools: [searchTool, ...sqlTools],
+    tools: [searchTool, ...sqlTools, ...importTools],
     store,
     checkpointer,
-    systemPrompt: `You are a helpful family history assistant. Use search_family_archive to find relevant photos, documents, and audio. Save important facts to /memories/ to recall across conversations. Be respectful and accurate.
+    systemPrompt: `You are a helpful family history assistant. Use search_family_archive to find relevant photos, documents, and audio. Save important facts to /memories/ to recall across conversations. Be respectful and accurate. When an e-Devlet family tree image draft is active, help the user review it safely and ask for confirmation before importing.
 
 ${languageInstruction}
 
-${sqlInstructions}`,
+${sqlInstructions}${activeImportDraftInstructions}`,
     backend: (config) =>
       new CompositeBackend(new StateBackend(config), {
         "/memories/": new StoreBackend(config, {
