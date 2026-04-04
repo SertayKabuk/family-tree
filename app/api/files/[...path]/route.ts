@@ -62,10 +62,77 @@ export async function GET(
     }
 
     const mimeType = getMimeType(filePath);
+    const totalSize = fileBuffer.byteLength;
 
-    return new NextResponse(new Uint8Array(fileBuffer), {
+    // Handle byte-range requests (required for audio/video on mobile browsers,
+    // especially iOS Safari which sends Range requests before playing media)
+    const rangeHeader = request.headers.get("range");
+
+    if (rangeHeader) {
+      // Reject multi-range requests (RFC 7233 §6.1) – serve only single ranges
+      if (rangeHeader.includes(",")) {
+        return new NextResponse(null, {
+          status: 416, // Range Not Satisfiable
+          headers: {
+            "Content-Range": `bytes */${totalSize}`,
+          },
+        });
+      }
+
+      const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader);
+
+      if (!match) {
+        return new NextResponse(null, {
+          status: 416, // Range Not Satisfiable
+          headers: {
+            "Content-Range": `bytes */${totalSize}`,
+          },
+        });
+      }
+
+      let start: number;
+      let end: number;
+
+      if (!match[1] && match[2]) {
+        // Suffix range: bytes=-N (last N bytes)
+        const suffixLength = parseInt(match[2], 10);
+        start = Math.max(0, totalSize - suffixLength);
+        end = totalSize - 1;
+      } else {
+        start = match[1] ? parseInt(match[1], 10) : 0;
+        // Per RFC 7233, cap end at the last available byte
+        end = match[2] ? Math.min(parseInt(match[2], 10), totalSize - 1) : totalSize - 1;
+      }
+
+      if (start > end || start >= totalSize) {
+        return new NextResponse(null, {
+          status: 416, // Range Not Satisfiable
+          headers: {
+            "Content-Range": `bytes */${totalSize}`,
+          },
+        });
+      }
+
+      const chunkSize = end - start + 1;
+      const chunk = fileBuffer.subarray(start, end + 1);
+
+      return new NextResponse(chunk, {
+        status: 206, // Partial Content
+        headers: {
+          "Content-Type": mimeType,
+          "Content-Range": `bytes ${start}-${end}/${totalSize}`,
+          "Content-Length": String(chunkSize),
+          "Accept-Ranges": "bytes",
+          "Cache-Control": "private, max-age=31536000",
+        },
+      });
+    }
+
+    return new NextResponse(fileBuffer, {
       headers: {
         "Content-Type": mimeType,
+        "Content-Length": String(totalSize),
+        "Accept-Ranges": "bytes",
         "Cache-Control": "private, max-age=31536000", // Cache for 1 year
       },
     });
