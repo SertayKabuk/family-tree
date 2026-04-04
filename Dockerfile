@@ -8,8 +8,10 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 FROM base AS deps
 WORKDIR /app
 
-# Copy package files
+# Copy package files and Prisma schema needed by postinstall
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY prisma ./prisma
+COPY prisma.config.ts ./prisma.config.ts
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
