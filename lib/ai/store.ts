@@ -31,14 +31,19 @@ export async function getAgentStore(): Promise<PostgresStore> {
   return globalForStore.agentStore;
 }
 
+export async function getCheckpointerPool(): Promise<pg.Pool> {
+  if (!globalForStore.checkpointerPool) {
+    globalForStore.checkpointerPool = new pg.Pool({
+      connectionString: env.DATABASE_URL,
+    });
+  }
+  return globalForStore.checkpointerPool;
+}
+
 export async function getCheckpointer(): Promise<PostgresSaver> {
   if (!globalForStore.checkpointer) {
-    if (!globalForStore.checkpointerPool) {
-      globalForStore.checkpointerPool = new pg.Pool({
-        connectionString: env.DATABASE_URL,
-      });
-    }
-    globalForStore.checkpointer = new PostgresSaver(globalForStore.checkpointerPool);
+    const pool = await getCheckpointerPool();
+    globalForStore.checkpointer = new PostgresSaver(pool);
     await globalForStore.checkpointer.setup();
   }
   return globalForStore.checkpointer;

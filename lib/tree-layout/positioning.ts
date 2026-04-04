@@ -356,8 +356,6 @@ function orderCouplesByPosition(
     if (gp.members.length !== 2) continue;
 
     const [a, b] = gp.members;
-    const aExcludes = [b];
-    const bExcludes = [a];
     const aSibCount = countSiblingsInGeneration(a, childToParents, siblingPairs, nodesInGen, b);
     const bSibCount = countSiblingsInGeneration(b, childToParents, siblingPairs, nodesInGen, a);
 

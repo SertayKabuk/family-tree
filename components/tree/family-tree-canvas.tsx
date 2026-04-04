@@ -26,7 +26,7 @@ import { FamilyMemberNode, FamilyMemberNodeData } from "@/components/nodes/famil
 import { RelationshipEdge, RelationshipEdgeData } from "@/components/edges/relationship-edge";
 import { FamilyGroupEdge, FamilyGroupEdgeData } from "@/components/edges/family-group-edge";
 import { TreeToolbar } from "@/components/tree/tree-toolbar";
-import { MemberDetailModal } from "@/components/tree/member-detail-modal";
+import { MemberDetailSheet } from "@/components/tree/member-detail-sheet";
 import { AddMemberDialog } from "@/components/tree/add-member-dialog";
 import { AddRelationshipDialog } from "@/components/tree/add-relationship-dialog";
 import { getLayoutedElements } from "@/lib/tree-layout";
@@ -662,7 +662,7 @@ function FamilyTreeCanvasInner({
         />
       )}
 
-      <MemberDetailModal
+      <MemberDetailSheet
         member={selectedMember}
         open={modalOpen}
         onOpenChange={setModalOpen}

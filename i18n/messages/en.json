@@ -33,7 +33,8 @@
   },
   "treeHeader": {
     "members": "{count} members",
-    "share": "Share"
+    "share": "Share",
+    "aiChat": "AI Chat"
   },
   "home": {
     "goToDashboard": "Go to Dashboard",
@@ -382,11 +383,24 @@
     "facts": {
       "title": "Facts & Stories",
       "empty": "No facts recorded yet",
-      "addFact": "Add Fact"
+      "addFact": "Add Fact",
+      "deleteTitle": "Delete Fact",
+      "deleteDescription": "Are you sure you want to delete \"{title}\"? This action cannot be undone.",
+      "deleteSuccess": "Fact deleted",
+      "deleteError": "Failed to delete fact"
     },
     "media": {
       "deleteSuccess": "Deleted successfully",
       "deleteError": "Failed to delete"
+    }
+  },
+  "editFact": {
+    "title": "Edit Fact",
+    "description": "Update this fact or story",
+    "submit": "Save Changes",
+    "success": "Fact updated",
+    "errors": {
+      "failed": "Failed to update fact"
     }
   },
   "addFact": {
@@ -469,6 +483,40 @@
       "description": "Your account information",
       "name": "Name",
       "email": "Email"
+    }
+  },
+  "chat": {
+    "title": "AI Assistant",
+    "back": "Back",
+    "dbCaption": "Can query your family database",
+    "emptyTitle": "Ask anything about your family tree",
+    "emptyDescription": "I can search documents, photos, audio — and query the database directly.",
+    "thinking": "Thinking\u2026",
+    "placeholder": "Ask about your family tree\u2026 (Enter to send, Shift+Enter for newline)",
+    "tools": {
+      "execute_sql": "Querying database",
+      "search_family_archive": "Searching archive"
+    },
+    "suggestions": {
+      "oldest": "Who are the oldest members?",
+      "marriages": "List all marriages",
+      "count": "How many members are there?",
+      "before1950": "Find members born before 1950"
+    },
+    "error": "Something went wrong. Please try again.",
+    "threads": {
+      "newChat": "New Chat",
+      "history": "Chat History",
+      "noHistory": "No previous chats",
+      "loading": "Loading history\u2026",
+      "unnamed": "Chat session",
+      "cancel": "Cancel",
+      "delete": "Delete chat",
+      "deleteAriaLabel": "Delete chat \"{title}\"",
+      "deleteTitle": "Delete Chat",
+      "deleteDescription": "Are you sure you want to delete \"{title}\"? This action cannot be undone.",
+      "deleteSuccess": "Chat deleted",
+      "deleteError": "Failed to delete chat"
     }
   },
   "story": {

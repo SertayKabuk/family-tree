@@ -343,9 +343,10 @@ model Story {
   memberId String @unique
   member   FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
-  content   String  @db.Text
-  audioPath String?
-  status    StoryStatus @default(PENDING)
+  content          String  @db.Text
+  narrativeContent String? @db.Text
+  audioPath        String?
+  status           StoryStatus @default(PENDING)
   error     String?
 
   createdAt DateTime @default(now())

@@ -38,6 +38,7 @@ import { GENDER_COLORS } from "@/lib/tree-colors";
 import { useRelationshipLabels } from "@/lib/use-relationship-labels";
 import { MediaUploadDialog } from "@/components/members/media-upload-dialog";
 import { AddFactDialog } from "@/components/members/add-fact-dialog";
+import { EditFactDialog } from "@/components/members/edit-fact-dialog";
 import { EditMemberDialog } from "@/components/members/edit-member-dialog";
 import { ProfilePhotoUpload } from "@/components/members/profile-photo-upload";
 import { PhotoGallery } from "@/components/ui/photo-gallery";
@@ -73,7 +74,7 @@ interface MemberProfileProps {
   canEdit: boolean;
 }
 
-export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfileProps) {
+export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfileProps) { // updated
   const router = useRouter();
   const t = useTranslations();
   const locale = useLocale();
@@ -84,6 +85,8 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
 
   const [uploadType, setUploadType] = useState<"photos" | "documents" | "audio" | null>(null);
   const [addFactOpen, setAddFactOpen] = useState(false);
+  const [editFactTarget, setEditFactTarget] = useState<Fact | null>(null);
+  const [deletingFact, setDeletingFact] = useState<string | null>(null);
   const [editMemberOpen, setEditMemberOpen] = useState(false);
   const [profilePhotoOpen, setProfilePhotoOpen] = useState(false);
   const [deletingMedia, setDeletingMedia] = useState<string | null>(null);
@@ -107,6 +110,23 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
       toast.error(t("profile.media.deleteError"));
     } finally {
       setDeletingMedia(null);
+    }
+  };
+
+  const deleteFact = async (factId: string) => {
+    setDeletingFact(factId);
+    try {
+      const response = await fetch(
+        `/api/trees/${treeId}/members/${member.id}/facts/${factId}`,
+        { method: "DELETE" }
+      );
+      if (!response.ok) throw new Error("Failed to delete");
+      toast.success(t("profile.facts.deleteSuccess"));
+      router.refresh();
+    } catch {
+      toast.error(t("profile.facts.deleteError"));
+    } finally {
+      setDeletingFact(null);
     }
   };
 
@@ -255,7 +275,7 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
               <Separator className="my-6" />
               <div>
                 <h3 className="font-semibold mb-2">{t("profile.biography")}</h3>
-                <p className="text-muted-foreground whitespace-pre-wrap">{member.bio}</p>
+                <p className="text-muted-foreground whitespace-pre-wrap">{"member.bio"}</p>
               </div>
             </>
           )}
@@ -509,12 +529,64 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
                 <div className="space-y-4">
                   {member.facts.map((fact) => (
                     <div key={fact.id} className="p-4 rounded-lg border">
-                      <h4 className="font-semibold">{fact.title}</h4>
-                      {fact.date && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatDate(fact.date)}
-                        </p>
-                      )}
+                      <p style={{color:'red',fontSize:'20px',fontWeight:'bold'}}>BUTTONS TEST - IF YOU SEE THIS, CODE IS LOADED</p>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h4 className="font-semibold">{fact.title}</h4>
+                          {fact.date && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {formatDate(fact.date)}
+                            </p>
+                          )}
+                        </div>
+                        {canEdit && (
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => setEditFactTarget(fact)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger
+                                render={
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-8 w-8 text-destructive hover:text-destructive"
+                                    disabled={deletingFact === fact.id}
+                                  />
+                                }
+                              >
+                                {deletingFact === fact.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>{t("profile.facts.deleteTitle")}</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {t("profile.facts.deleteDescription", { title: fact.title })}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteFact(fact.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    {t("common.delete")}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        )}
+                      </div>
                       <p className="mt-2 text-muted-foreground whitespace-pre-wrap">
                         {fact.content}
                       </p>
@@ -546,6 +618,14 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
         memberId={member.id}
         open={addFactOpen}
         onOpenChange={setAddFactOpen}
+      />
+
+      <EditFactDialog
+        treeId={treeId}
+        memberId={member.id}
+        fact={editFactTarget}
+        open={editFactTarget !== null}
+        onOpenChange={(open) => { if (!open) setEditFactTarget(null); }}
       />
 
       <EditMemberDialog

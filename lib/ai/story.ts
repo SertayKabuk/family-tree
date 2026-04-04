@@ -1,11 +1,10 @@
-import { GoogleGenAI } from "@google/genai";
+import { z } from "zod";
+import { createAgent, providerStrategy } from "langchain";
+import { ChatGoogle } from "@langchain/google";
+import { HumanMessage } from "@langchain/core/messages";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
 import { generateStoryAudio, deleteStoryAudio } from "./tts";
-
-function getClient() {
-  return new GoogleGenAI({ apiKey: env.GOOGLE_API_KEY });
-}
 
 function buildMemberContext(member: {
   firstName: string;
@@ -49,7 +48,6 @@ function buildMemberContext(member: {
   if (member.occupation) lines.push(`Meslek: ${member.occupation}`);
   if (member.bio) lines.push(`\nBiyografi:\n${member.bio}`);
 
-  // Relationships
   const relLines: string[] = [];
   for (const r of member.relationshipsFrom) {
     const name = [r.toMember.firstName, r.toMember.lastName].filter(Boolean).join(" ");
@@ -63,7 +61,6 @@ function buildMemberContext(member: {
     lines.push(`\nİlişkiler:\n${relLines.join("\n")}`);
   }
 
-  // Facts
   if (member.facts.length > 0) {
     const factLines = member.facts.map((f) => {
       let line = `- ${f.title}: ${f.content}`;
@@ -74,7 +71,6 @@ function buildMemberContext(member: {
     lines.push(`\nBilgiler ve Hikayeler:\n${factLines.join("\n")}`);
   }
 
-  // Media summaries
   if (member.photos.length > 0) {
     const photoLines = member.photos
       .map((p) => {
@@ -106,7 +102,14 @@ function buildMemberContext(member: {
   return lines.join("\n");
 }
 
-export async function generateMemberStory(memberId: string): Promise<string> {
+const generatedStoriesSchema = z.object({
+  formalStory: z.string().describe("Resmi biyografik metin, UI'da görüntülenecek."),
+  narrativeStory: z.string().describe("Sözlü anlatım hikayesi, sesli okuma için."),
+});
+
+type GeneratedStories = z.infer<typeof generatedStoriesSchema>;
+
+export async function generateMemberStory(memberId: string): Promise<GeneratedStories> {
   const member = await prisma.familyMember.findUnique({
     where: { id: memberId },
     include: {
@@ -126,55 +129,57 @@ export async function generateMemberStory(memberId: string): Promise<string> {
   if (!member) throw new Error("Member not found");
 
   const context = buildMemberContext(member);
-  const client = getClient();
 
-  const response = await client.models.generateContent({
+  const model = new ChatGoogle({
     model: env.GOOGLE_LLM_MODEL,
-    contents: [
-      {
-        parts: [
-          {
-            text: `Sen bir aile tarihçisisin. Aşağıdaki aile üyesi hakkında sıcak, samimi ve duygusal bir biyografik hikaye yaz.
+    apiKey: env.GOOGLE_API_KEY,
+  });
 
-Kurallar:
-- Türkçe yaz.
-- Yaklaşık 300-400 kelime olsun.
-- Hikaye anlatıcı bir üslup kullan, sanki bir büyükanne/büyükbaba torunlarına anlatıyor gibi.
-- Eldeki tüm bilgileri (biyografi, ilişkiler, bilgiler/hikayeler, fotoğraf açıklamaları, belgeler) doğal bir şekilde hikayeye örgüle.
-- Spekülatif bilgi ekleme, sadece verilen bilgileri kullan.
-- Eğer bilgi azsa, kısa ama anlamlı bir hikaye yaz.
-- Hikayeyi doğrudan yaz, başlık veya format ekleme.
+  const agent = createAgent({
+    model,
+    tools: [],
+    responseFormat: providerStrategy(generatedStoriesSchema),
+  });
+
+  const result = await agent.invoke({
+    messages: [
+      new HumanMessage(`Sen bir aile tarihçisisin. Aşağıdaki aile üyesi hakkında iki farklı metin yaz:
+
+1. formalStory: Resmi ve yapılandırılmış bir biyografi. Tarihler, yerler ve başarılar belirgin şekilde yer almalı. Ansiklopedik ama sıcak bir üslup kullan. 350-450 kelime.
+
+2. narrativeStory: Sözlü anlatım tarzında, sesli okunmak üzere tasarlanmış bir hikaye. Sanki bir büyükanne torunlarına anlatıyor gibi, akıcı, duygusal ve doğal. Yazılı formatlamadan kaçın (madde işareti, başlık vb. yok). 250-350 kelime.
+
+Her iki metin de:
+- Türkçe olmalı
+- Yalnızca verilen bilgilere dayanmalı, spekülatif bilgi eklenmemeli
+- Tüm mevcut bilgileri (biyografi, ilişkiler, olaylar, fotoğraf açıklamaları, belgeler) doğal şekilde içermeli
 
 Aile Üyesi Bilgileri:
-${context}`,
-          },
-        ],
-      },
+${context}`),
     ],
   });
 
-  const storyText = response.text;
-  if (!storyText) throw new Error("No story text generated");
+  const parsed = generatedStoriesSchema.parse(result.structuredResponse);
 
-  return storyText.trim();
+  return {
+    formalStory: parsed.formalStory.trim(),
+    narrativeStory: parsed.narrativeStory.trim(),
+  };
 }
 
 export async function generateAndSaveStory(memberId: string): Promise<void> {
-  // Skip if already generating
   const existing = await prisma.story.findUnique({ where: { memberId } });
   if (existing?.status === "GENERATING") {
     console.log(`Story already generating for member ${memberId}, skipping`);
     return;
   }
 
-  // Get treeId for audio storage
   const member = await prisma.familyMember.findUnique({
     where: { id: memberId },
     select: { treeId: true },
   });
   if (!member) return;
 
-  // Upsert to GENERATING status
   await prisma.story.upsert({
     where: { memberId },
     create: { memberId, content: "", status: "GENERATING" },
@@ -182,25 +187,24 @@ export async function generateAndSaveStory(memberId: string): Promise<void> {
   });
 
   try {
-    const storyText = await generateMemberStory(memberId);
+    const { formalStory, narrativeStory } = await generateMemberStory(memberId);
 
-    // Delete old audio if it exists
     if (existing?.audioPath) {
       await deleteStoryAudio(existing.audioPath);
     }
 
     let audioPath: string | null = null;
     try {
-      audioPath = await generateStoryAudio(storyText, member.treeId, memberId);
+      audioPath = await generateStoryAudio(narrativeStory, member.treeId, memberId);
     } catch (ttsError) {
       console.error(`TTS failed for member ${memberId}:`, ttsError);
-      // Still save text even if TTS fails
     }
 
     await prisma.story.update({
       where: { memberId },
       data: {
-        content: storyText,
+        content: formalStory,
+        narrativeContent: narrativeStory,
         audioPath,
         status: "COMPLETED",
         error: null,

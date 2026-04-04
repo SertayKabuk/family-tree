@@ -1,12 +1,10 @@
-import { GoogleGenAI } from "@google/genai";
+import { createAgent } from "langchain";
+import { ChatGoogle } from "@langchain/google";
+import { HumanMessage } from "@langchain/core/messages";
 import fs from "fs/promises";
 import path from "path";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
-
-function getClient() {
-  return new GoogleGenAI({ apiKey: env.GOOGLE_API_KEY });
-}
 
 const PHOTO_PROMPT = `Bu fotoğrafı ayrıntılı olarak analiz et. Türkçe yanıt ver.
 
@@ -41,18 +39,21 @@ const AUDIO_PROMPT = `Bu ses kaydını dinle ve analiz et. Türkçe yanıt ver.
 
 Konuşmanın önemli kısımlarını özetle. Maksimum 200 kelime.`;
 
-function getPromptForType(type: "photo" | "document" | "audio"): string {
-  switch (type) {
-    case "photo":
-      return PHOTO_PROMPT;
-    case "document":
-      return DOCUMENT_PROMPT;
-    case "audio":
-      return AUDIO_PROMPT;
-  }
-}
+type MediaType = "photo" | "document" | "audio";
 
-function getMimeTypeForAnalysis(type: "photo" | "document" | "audio", filePath: string): string {
+const PROMPTS: Record<MediaType, string> = {
+  photo: PHOTO_PROMPT,
+  document: DOCUMENT_PROMPT,
+  audio: AUDIO_PROMPT,
+};
+
+const CONTENT_TYPES: Record<MediaType, "image" | "file" | "audio"> = {
+  photo: "image",
+  document: "file",
+  audio: "audio",
+};
+
+function getMimeType(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
   const mimeMap: Record<string, string> = {
     ".jpg": "image/jpeg",
@@ -71,38 +72,46 @@ function getMimeTypeForAnalysis(type: "photo" | "document" | "audio", filePath: 
   return mimeMap[ext] || "application/octet-stream";
 }
 
-async function analyzeFile(filePath: string, type: "photo" | "document" | "audio"): Promise<string> {
+async function analyzeFile(filePath: string, type: MediaType): Promise<string> {
   const fullPath = path.join(env.UPLOAD_DIR, filePath);
   const buffer = await fs.readFile(fullPath);
-  const mimeType = getMimeTypeForAnalysis(type, filePath);
-  const prompt = getPromptForType(type);
+  const mimeType = getMimeType(filePath);
+  const contentType = CONTENT_TYPES[type];
 
-  const client = getClient();
-  const response = await client.models.generateContent({
+  const model = new ChatGoogle({
     model: env.GOOGLE_LLM_MODEL,
-    contents: [
-      {
-        parts: [
-          { inlineData: { mimeType, data: buffer.toString("base64") } },
-          { text: prompt },
+    apiKey: env.GOOGLE_API_KEY,
+  });
+
+  const agent = createAgent({
+    model,
+    tools: [],
+  });
+
+  const result = await agent.invoke({
+    messages: [
+      new HumanMessage({
+        content: [
+          { type: contentType, mimeType, data: buffer.toString("base64") },
+          { type: "text", text: PROMPTS[type] },
         ],
-      },
+      }),
     ],
   });
 
-  const text = response.text;
-  if (!text) throw new Error("No analysis text returned");
+  const lastMessage = result.messages[result.messages.length - 1];
+  const text = typeof lastMessage.content === "string"
+    ? lastMessage.content
+    : lastMessage.text;
 
+  if (!text) throw new Error("No analysis text returned");
   return text.trim();
 }
 
 export async function analyzePhoto(photoId: string, filePath: string): Promise<void> {
   try {
     const aiDescription = await analyzeFile(filePath, "photo");
-    await prisma.photo.update({
-      where: { id: photoId },
-      data: { aiDescription },
-    });
+    await prisma.photo.update({ where: { id: photoId }, data: { aiDescription } });
     console.log(`Photo ${photoId} analyzed successfully`);
   } catch (error) {
     console.error(`Photo analysis failed for ${photoId}:`, error);
@@ -112,10 +121,7 @@ export async function analyzePhoto(photoId: string, filePath: string): Promise<v
 export async function analyzeDocument(documentId: string, filePath: string): Promise<void> {
   try {
     const aiDescription = await analyzeFile(filePath, "document");
-    await prisma.document.update({
-      where: { id: documentId },
-      data: { aiDescription },
-    });
+    await prisma.document.update({ where: { id: documentId }, data: { aiDescription } });
     console.log(`Document ${documentId} analyzed successfully`);
   } catch (error) {
     console.error(`Document analysis failed for ${documentId}:`, error);
@@ -125,10 +131,7 @@ export async function analyzeDocument(documentId: string, filePath: string): Pro
 export async function analyzeAudioClip(audioClipId: string, filePath: string): Promise<void> {
   try {
     const aiDescription = await analyzeFile(filePath, "audio");
-    await prisma.audioClip.update({
-      where: { id: audioClipId },
-      data: { aiDescription },
-    });
+    await prisma.audioClip.update({ where: { id: audioClipId }, data: { aiDescription } });
     console.log(`AudioClip ${audioClipId} analyzed successfully`);
   } catch (error) {
     console.error(`Audio analysis failed for ${audioClipId}:`, error);

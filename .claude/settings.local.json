@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(npm list:*)",
+      "Bash(grep -r \"responseJsonSchema\\\\|zodToJsonSchema\\\\|responseSchema\" node_modules/@google/genai/dist/*.js)",
+      "Bash(pnpm add:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node:*)",
+      "Bash(pnpm remove:*)",
+      "WebFetch(domain:docs.langchain.com)",
+      "Bash(grep -r \"mimeType\\\\|inlineData\\\\|image_url\\\\|media\" node_modules/@langchain/google/dist/*.d.ts)",
+      "Bash(grep -rn \"image_url\\\\|mimeType\" node_modules/@langchain/core/dist/messages/*.d.ts)",
+      "Bash(grep -rn \"type.*image\\\\|base64\\\\|inlineData\\\\|mimeType\" node_modules/@langchain/core/dist/messages/content/*.d.ts)",
+      "Bash(grep -n \"image\\\\|audio\\\\|file\\\\|mimeType\\\\|base64\" node_modules/@langchain/google/dist/converters/*.js)",
+      "Bash(grep -n \"google\" node_modules/langchain/dist/chat_models/*.js)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(curl:*)",
+      "WebFetch(domain:reference.langchain.com)",
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "WebFetch(domain:langchain-ai.github.io)",
+      "Bash(grep -r \"put\\(\" node_modules/@langchain/langgraph-checkpoint-postgres/dist/*.d.ts)",
+      "Bash(xargs grep:*)",
+      "Bash(rm:*)",
+      "Bash(npx next:*)"
+    ]
+  }
+}

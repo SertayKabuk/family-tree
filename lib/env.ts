@@ -7,6 +7,7 @@ const envSchema = z.object({
   // Google AI
   GOOGLE_API_KEY: z.string().min(1),
   GOOGLE_LLM_MODEL: z.string().default("gemini-3-flash-preview"),
+  
 
   // Auth
   AUTH_GOOGLE_ID: z.string().min(1),
@@ -17,6 +18,10 @@ const envSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().default("http://localhost:3000"),
   UPLOAD_DIR: z.string().default("./uploads"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+
+  // DeepAgent
+  DEEPAGENT_LLM_MODEL: z.string().default("gemini-3-flash-preview"),
+
 });
 
 let _env: z.infer<typeof envSchema> | undefined;

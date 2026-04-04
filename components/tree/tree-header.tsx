@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Settings, Share2, Users } from "lucide-react";
+import { Bot, ChevronLeft, Settings, Share2, Users } from "lucide-react";
 import { FamilyTree, User } from "@prisma/client";
 
 interface TreeHeaderProps {
@@ -43,6 +43,13 @@ export function TreeHeader({ tree, canEdit }: TreeHeaderProps) {
           <Users className="h-3 w-3" />
           {t("treeHeader.members", { count: tree._count.familyMembers })}
         </Badge>
+
+        <Link href={`/trees/${tree.id}/chat`}>
+          <Button variant="outline" size="sm">
+            <Bot className="h-4 w-4 mr-1" />
+            {t("treeHeader.aiChat")}
+          </Button>
+        </Link>
 
         {canEdit && (
           <>

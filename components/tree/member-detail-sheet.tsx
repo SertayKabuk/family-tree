@@ -4,12 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -50,11 +50,13 @@ import {
   Fact,
   Relationship,
   Gender,
+  Story,
 } from "@prisma/client";
 import { GENDER_COLORS } from "@/lib/tree-colors";
 import { useRelationshipLabels } from "@/lib/use-relationship-labels";
 import { MediaUploadDialog } from "@/components/members/media-upload-dialog";
 import { AddFactDialog } from "@/components/members/add-fact-dialog";
+import { EditFactDialog } from "@/components/members/edit-fact-dialog";
 import { EditMemberDialog } from "@/components/members/edit-member-dialog";
 import { ProfilePhotoUpload } from "@/components/members/profile-photo-upload";
 import { PhotoGallery } from "@/components/ui/photo-gallery";
@@ -71,25 +73,26 @@ type MemberWithDetails = FamilyMember & {
   documents: Document[];
   audioClips: AudioClip[];
   facts: Fact[];
+  story?: Story | null;
 };
 
-interface MemberDetailModalProps {
+interface MemberDetailSheetProps {
   member: FamilyMember | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   treeId: string;
-  canEdit: boolean;
+  canEdit?: boolean;
   onMemberSelect?: (memberId: string) => void;
 }
 
-export function MemberDetailModal({
+export function MemberDetailSheet({
   member,
   open,
   onOpenChange,
   treeId,
-  canEdit,
+  canEdit = false,
   onMemberSelect,
-}: MemberDetailModalProps) {
+}: MemberDetailSheetProps) {
   const router = useRouter();
   const t = useTranslations();
   const locale = useLocale();
@@ -101,6 +104,8 @@ export function MemberDetailModal({
 
   const [uploadType, setUploadType] = useState<"photos" | "documents" | "audio" | null>(null);
   const [addFactOpen, setAddFactOpen] = useState(false);
+  const [editFactTarget, setEditFactTarget] = useState<Fact | null>(null);
+  const [deletingFact, setDeletingFact] = useState<string | null>(null);
   const [editMemberOpen, setEditMemberOpen] = useState(false);
   const [profilePhotoOpen, setProfilePhotoOpen] = useState(false);
 
@@ -173,6 +178,30 @@ export function MemberDetailModal({
     }
   };
 
+  const deleteFact = async (factId: string) => {
+    if (!member) return;
+
+    setDeletingFact(factId);
+    try {
+      const response = await fetch(
+        `/api/trees/${treeId}/members/${member.id}/facts/${factId}`,
+        { method: "DELETE" }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete fact");
+      }
+
+      toast.success(t("profile.facts.deleteSuccess"));
+      await fetchMemberDetails();
+      router.refresh();
+    } catch {
+      toast.error(t("profile.facts.deleteError"));
+    } finally {
+      setDeletingFact(null);
+    }
+  };
+
   if (!member) return null;
 
   const colors = GENDER_COLORS[member.gender];
@@ -211,14 +240,15 @@ export function MemberDetailModal({
     : [];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0"
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="right"
+        className="w-full !max-w-full sm:!max-w-[600px] md:!max-w-[800px] lg:!max-w-[900px] overflow-y-auto p-0"
         showCloseButton={false}
       >
         {/* Header with Avatar and Basic Info */}
         <div className="sticky top-0 z-10 bg-background border-b">
-          <DialogHeader className="p-6 pb-4">
+          <SheetHeader className="p-6 pb-4">
             <div className="flex items-start gap-4">
               <div className="relative group shrink-0">
                 <Avatar
@@ -252,9 +282,9 @@ export function MemberDetailModal({
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <DialogTitle className="text-xl">{fullName}</DialogTitle>
+                    <SheetTitle className="text-xl">{fullName}</SheetTitle>
                     {member.nickname && (
-                      <DialogDescription>&ldquo;{member.nickname}&rdquo;</DialogDescription>
+                      <SheetDescription>&ldquo;{member.nickname}&rdquo;</SheetDescription>
                     )}
                     <Badge
                       variant="secondary"
@@ -327,7 +357,7 @@ export function MemberDetailModal({
                 </div>
               </div>
             </div>
-          </DialogHeader>
+          </SheetHeader>
         </div>
 
         {/* Content */}
@@ -338,7 +368,24 @@ export function MemberDetailModal({
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Biography */}
+              {/* Story or Biography */}
+              {memberDetails?.story && (memberDetails.story.content || memberDetails.story.narrativeContent) && (
+                <div>
+                  <h3 className="font-semibold mb-2">{t("story.title")}</h3>
+                  {memberDetails.story.audioPath && (
+                    <div className="mb-4">
+                      <audio
+                        controls
+                        src={`/api/files/${memberDetails.story.audioPath}`}
+                        className="w-[90%] sm:w-[400px] h-10"
+                      />
+                    </div>
+                  )}
+                  <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                    {memberDetails.story.content || memberDetails.story.narrativeContent}
+                  </p>
+                </div>
+              )}
               {member.bio && (
                 <div>
                   <h3 className="font-semibold mb-2">{t("profile.biography")}</h3>
@@ -604,12 +651,63 @@ export function MemberDetailModal({
                         <div className="space-y-4">
                           {memberDetails.facts.map((fact) => (
                             <div key={fact.id} className="p-4 rounded-lg border">
-                              <h4 className="font-semibold">{fact.title}</h4>
-                              {fact.date && (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {formatDate(fact.date)}
-                                </p>
-                              )}
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <h4 className="font-semibold">{fact.title}</h4>
+                                  {fact.date && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {formatDate(fact.date)}
+                                    </p>
+                                  )}
+                                </div>
+                                {canEdit && (
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-8 w-8"
+                                      onClick={() => setEditFactTarget(fact)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger
+                                        render={
+                                          <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 text-destructive hover:text-destructive"
+                                            disabled={deletingFact === fact.id}
+                                          />
+                                        }
+                                      >
+                                        {deletingFact === fact.id ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <Trash2 className="h-4 w-4" />
+                                        )}
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>{t("profile.facts.deleteTitle")}</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            {t("profile.facts.deleteDescription", { title: fact.title })}
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() => deleteFact(fact.id)}
+                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                          >
+                                            {t("common.delete")}
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                                )}
+                              </div>
                               <p className="mt-2 text-muted-foreground whitespace-pre-wrap">
                                 {fact.content}
                               </p>
@@ -700,6 +798,19 @@ export function MemberDetailModal({
           }}
         />
 
+        <EditFactDialog
+          treeId={treeId}
+          memberId={member.id}
+          fact={editFactTarget}
+          open={editFactTarget !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditFactTarget(null);
+              void fetchMemberDetails();
+            }
+          }}
+        />
+
         <EditMemberDialog
           member={memberDetails ?? member}
           treeId={treeId}
@@ -727,7 +838,7 @@ export function MemberDetailModal({
             }
           }}
         />
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
