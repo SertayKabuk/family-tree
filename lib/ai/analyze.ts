@@ -1,4 +1,3 @@
-import { createAgent } from "langchain";
 import { ChatGoogle } from "@langchain/google";
 import { HumanMessage } from "@langchain/core/messages";
 import fs from "fs/promises";
@@ -83,26 +82,16 @@ async function analyzeFile(filePath: string, type: MediaType): Promise<string> {
     apiKey: env.GOOGLE_API_KEY,
   });
 
-  const agent = createAgent({
-    model,
-    tools: [],
-  });
+  const result = await model.invoke([
+    new HumanMessage({
+      contentBlocks: [
+        { type: "text", text: PROMPTS[type] },
+        { type: contentType, mimeType, data: buffer.toString("base64") },
+      ],
+    }),
+  ]);
 
-  const result = await agent.invoke({
-    messages: [
-      new HumanMessage({
-        content: [
-          { type: contentType, mimeType, data: buffer.toString("base64") },
-          { type: "text", text: PROMPTS[type] },
-        ],
-      }),
-    ],
-  });
-
-  const lastMessage = result.messages[result.messages.length - 1];
-  const text = typeof lastMessage.content === "string"
-    ? lastMessage.content
-    : lastMessage.text;
+  const text = result.text;
 
   if (!text) throw new Error("No analysis text returned");
   return text.trim();
