@@ -147,7 +147,7 @@ export async function generateMemberStory(memberId: string): Promise<GeneratedSt
 
 1. formalStory: Resmi ve yapılandırılmış bir biyografi. Tarihler, yerler ve başarılar belirgin şekilde yer almalı. Ansiklopedik ama sıcak bir üslup kullan. 350-450 kelime.
 
-2. narrativeStory: Sözlü anlatım tarzında, sesli okunmak üzere tasarlanmış bir hikaye. Sanki bir büyükanne torunlarına anlatıyor gibi, akıcı, duygusal ve doğal. Yazılı formatlamadan kaçın (madde işareti, başlık vb. yok). 250-350 kelime.
+2. narrativeStory: Sözlü anlatım tarzında, sesli okunmak üzere tasarlanmış bir hikaye. Akıcı, duygusal ve doğal olmalı. Yazılı formatlamadan kaçın (madde işareti, başlık vb. yok). 250-350 kelime.
 
 Her iki metin de:
 - Türkçe olmalı

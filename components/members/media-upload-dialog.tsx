@@ -49,6 +49,7 @@ export function MediaUploadDialog({
 }: MediaUploadDialogProps) {
   const router = useRouter();
   const t = useTranslations("mediaUpload");
+  const tCommon = useTranslations("common");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -58,6 +59,21 @@ export function MediaUploadDialog({
 
   const config = TYPE_CONFIG[type];
   const Icon = config.icon;
+  const typeTranslations = {
+    photos: {
+      title: t("photos.title"),
+      description: t("photos.description"),
+    },
+    documents: {
+      title: t("documents.title"),
+      description: t("documents.description"),
+    },
+    audio: {
+      title: t("audio.title"),
+      description: t("audio.description"),
+    },
+  };
+  const dialogCopy = typeTranslations[type];
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -71,7 +87,7 @@ export function MediaUploadDialog({
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      toast.error(t("errors.selectFile"));
+      toast.error(t("errors.noFile"));
       return;
     }
 
@@ -118,8 +134,8 @@ export function MediaUploadDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t(`types.${type}.title`)}</DialogTitle>
-          <DialogDescription>{t(`types.${type}.description`)}</DialogDescription>
+          <DialogTitle>{dialogCopy.title}</DialogTitle>
+          <DialogDescription>{dialogCopy.description}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -138,7 +154,7 @@ export function MediaUploadDialog({
             >
               <Icon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-sm text-muted-foreground">
-                {t("dropzone")}
+                {t("selectFile")}
               </p>
             </div>
           ) : (
@@ -161,12 +177,12 @@ export function MediaUploadDialog({
           )}
 
           <div className="grid gap-2">
-            <Label htmlFor="title">{t("fileTitle")}</Label>
+            <Label htmlFor="title">{t("titleLabel")}</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={t("fileTitlePlaceholder")}
+              placeholder={t("titlePlaceholder")}
               disabled={loading}
             />
           </div>
@@ -174,18 +190,18 @@ export function MediaUploadDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose} disabled={loading}>
-            {t("cancel")}
+            {tCommon("cancel")}
           </Button>
           <Button onClick={handleUpload} disabled={!selectedFile || loading}>
             {loading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {t("uploading")}
+                {tCommon("uploading")}
               </>
             ) : (
               <>
                 <Upload className="h-4 w-4 mr-2" />
-                {t("upload")}
+                {tCommon("upload")}
               </>
             )}
           </Button>
