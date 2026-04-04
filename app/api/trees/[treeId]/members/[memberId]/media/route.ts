@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/permissions";
 import { deleteFile } from "@/lib/storage";
 import { z } from "zod";
-import { enqueueMediaIndexing, enqueueStoryGeneration } from "@/lib/jobs/enqueue";
+import { enqueueMediaIndexing, requestStoryGeneration } from "@/lib/jobs/enqueue";
 
 const deleteMediaSchema = z.object({
   type: z.enum(["photo", "document", "audio"]),
@@ -91,7 +91,7 @@ export async function DELETE(
     }
 
     // Auto-regenerate story on media deletion
-    await enqueueStoryGeneration(memberId);
+    await requestStoryGeneration(memberId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

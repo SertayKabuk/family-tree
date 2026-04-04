@@ -51,8 +51,8 @@ export async function PATCH(request: Request, { params }: Params) {
       data: { updatedAt: new Date() },
     });
 
-    const { enqueueStoryGeneration } = await import("@/lib/jobs/enqueue");
-    await enqueueStoryGeneration(memberId);
+    const { requestStoryGeneration } = await import("@/lib/jobs/enqueue");
+    await requestStoryGeneration(memberId);
 
     return NextResponse.json(updated);
   } catch (error) {
@@ -85,8 +85,8 @@ export async function DELETE(_request: Request, { params }: Params) {
       data: { updatedAt: new Date() },
     });
 
-    const { enqueueStoryGeneration } = await import("@/lib/jobs/enqueue");
-    await enqueueStoryGeneration(memberId);
+    const { requestStoryGeneration } = await import("@/lib/jobs/enqueue");
+    await requestStoryGeneration(memberId);
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {

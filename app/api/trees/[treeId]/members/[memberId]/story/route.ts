@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/permissions";
 import { deleteStoryAudio } from "@/lib/ai/tts";
-import { enqueueStoryGeneration } from "@/lib/jobs/enqueue";
+import { requestStoryGeneration } from "@/lib/jobs/enqueue";
 
 // GET /api/trees/[treeId]/members/[memberId]/story - Get member story
 export async function GET(
@@ -63,16 +63,9 @@ export async function POST(
       return NextResponse.json({ error: "Member not found" }, { status: 404 });
     }
 
-    // Check if already generating
-    const existing = await prisma.story.findUnique({ where: { memberId } });
-    if (existing?.status === "GENERATING") {
-      return NextResponse.json({ message: "Story is already being generated", status: "GENERATING" });
-    }
+    await requestStoryGeneration(memberId, { immediate: true });
 
-    // Enqueue story generation
-    await enqueueStoryGeneration(memberId);
-
-    return NextResponse.json({ message: "Story generation started", status: "GENERATING" }, { status: 202 });
+    return NextResponse.json({ message: "Story generation requested", status: "PENDING" }, { status: 202 });
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "Unauthorized") {

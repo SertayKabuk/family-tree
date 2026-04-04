@@ -9,7 +9,7 @@ import {
   FILE_SIZE_LIMITS,
   MediaType,
 } from "@/lib/storage";
-import { enqueueMediaAnalysis, enqueueMediaIndexing, enqueueStoryGeneration } from "@/lib/jobs/enqueue";
+import { enqueueMediaAnalysis, enqueueMediaIndexing, requestStoryGeneration } from "@/lib/jobs/enqueue";
 
 // POST /api/trees/[treeId]/members/[memberId]/upload - Upload file for a member
 export async function POST(
@@ -146,7 +146,7 @@ export async function POST(
       await enqueueMediaAnalysis(type, dbRecord.id, result.filePath, memberId);
     } else {
       // Profile uploads still need story regeneration
-      await enqueueStoryGeneration(memberId);
+      await requestStoryGeneration(memberId);
     }
 
     return NextResponse.json(

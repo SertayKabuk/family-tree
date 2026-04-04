@@ -145,8 +145,8 @@ export async function PATCH(
       (k) => k !== "positionX" && k !== "positionY"
     );
     if (hasContentChanges) {
-      const { enqueueStoryGeneration } = await import("@/lib/jobs/enqueue");
-      await enqueueStoryGeneration(memberId);
+      const { requestStoryGeneration } = await import("@/lib/jobs/enqueue");
+      await requestStoryGeneration(memberId);
     }
 
     return NextResponse.json(member);

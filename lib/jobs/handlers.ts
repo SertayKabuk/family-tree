@@ -1,21 +1,145 @@
 import type { Job } from "pg-boss";
+import { prisma } from "@/lib/prisma";
 import type {
   StoryGenerationPayload,
   MediaAnalysisPayload,
   MediaIndexingPayload,
 } from "./queues";
+import {
+  clearActiveStoryRun,
+  registerActiveStoryRun,
+} from "./story-run-registry";
+
+function startStorySupersessionWatcher(
+  memberId: string,
+  jobId: string,
+  targetVersion: number,
+  controller: AbortController
+) {
+  let checking = false;
+
+  const interval = setInterval(() => {
+    if (checking || controller.signal.aborted) {
+      return;
+    }
+
+    checking = true;
+
+    void prisma.story.findUnique({
+      where: { memberId },
+      select: {
+        requestedVersion: true,
+        activeJobId: true,
+      },
+    }).then((story) => {
+      if (!story) {
+        controller.abort(`Story state removed for member ${memberId}`);
+        return;
+      }
+
+      if (story.requestedVersion > targetVersion) {
+        controller.abort(
+          `Story version ${targetVersion} for member ${memberId} was superseded by ${story.requestedVersion}`
+        );
+        return;
+      }
+
+      if (story.activeJobId !== jobId) {
+        controller.abort(
+          `Story job ${jobId} for member ${memberId} is no longer active`
+        );
+      }
+    }).catch((error) => {
+      console.error(
+        `[job:story-generation] Watcher failed for member ${memberId}:`,
+        error
+      );
+    }).finally(() => {
+      checking = false;
+    });
+  }, 1000);
+
+  return () => clearInterval(interval);
+}
 
 export async function handleStoryGeneration(
   jobs: Job<StoryGenerationPayload>[]
 ) {
   for (const job of jobs) {
     const { memberId } = job.data;
-    console.log(`[job:story-generation] Starting for member ${memberId}`);
+    console.log(`[job:story-generation] Starting job ${job.id} for member ${memberId}`);
 
-    const { generateAndSaveStory } = await import("@/lib/ai/story");
-    await generateAndSaveStory(memberId);
+    const story = await prisma.story.findUnique({
+      where: { memberId },
+      select: {
+        requestedVersion: true,
+        generatedVersion: true,
+      },
+    });
 
-    console.log(`[job:story-generation] Completed for member ${memberId}`);
+    if (!story) {
+      console.log(`[job:story-generation] No story state found for member ${memberId}, skipping job ${job.id}`);
+      continue;
+    }
+
+    if (story.generatedVersion >= story.requestedVersion) {
+      await prisma.story.updateMany({
+        where: {
+          memberId,
+          queuedJobId: job.id,
+        },
+        data: {
+          queuedJobId: null,
+        },
+      });
+
+      console.log(`[job:story-generation] Story for member ${memberId} is already fresh, skipping job ${job.id}`);
+      continue;
+    }
+
+    const targetVersion = story.requestedVersion;
+    const claimResult = await prisma.story.updateMany({
+      where: {
+        memberId,
+        requestedVersion: targetVersion,
+        activeJobId: null,
+      },
+      data: {
+        activeJobId: job.id,
+        queuedJobId: null,
+        status: "GENERATING",
+        error: null,
+        generationStartedAt: new Date(),
+      },
+    });
+
+    if (claimResult.count === 0) {
+      console.log(`[job:story-generation] Job ${job.id} for member ${memberId} could not claim the current version, skipping`);
+      continue;
+    }
+
+    const controller = new AbortController();
+    registerActiveStoryRun(memberId, job.id, controller);
+    const stopWatching = startStorySupersessionWatcher(
+      memberId,
+      job.id,
+      targetVersion,
+      controller
+    );
+
+    try {
+      const { generateAndSaveStory } = await import("@/lib/ai/story");
+      await generateAndSaveStory(memberId, {
+        signal: controller.signal,
+        jobId: job.id,
+        targetVersion,
+      });
+    } finally {
+      stopWatching();
+      clearActiveStoryRun(memberId, job.id);
+    }
+
+    console.log(`[job:story-generation] Finished job ${job.id} for member ${memberId}`);
   }
 }
 
@@ -45,8 +169,8 @@ export async function handleMediaAnalysis(
     );
 
     // Chain: after media analysis completes, regenerate the member's story
-    const { enqueueStoryGeneration } = await import("@/lib/jobs/enqueue");
-    await enqueueStoryGeneration(memberId);
+    const { requestStoryGeneration } = await import("@/lib/jobs/enqueue");
+    await requestStoryGeneration(memberId);
   }
 }
 

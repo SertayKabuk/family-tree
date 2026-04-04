@@ -57,8 +57,8 @@ export async function POST(
     });
 
     // Auto-regenerate story on new fact
-    const { enqueueStoryGeneration } = await import("@/lib/jobs/enqueue");
-    await enqueueStoryGeneration(memberId);
+    const { requestStoryGeneration } = await import("@/lib/jobs/enqueue");
+    await requestStoryGeneration(memberId);
 
     return NextResponse.json(fact, { status: 201 });
   } catch (error) {

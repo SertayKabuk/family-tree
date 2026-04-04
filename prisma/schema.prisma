@@ -347,7 +347,15 @@ model Story {
   narrativeContent String? @db.Text
   audioPath        String?
   status           StoryStatus @default(PENDING)
-  error     String?
+  error            String?
+
+  requestedVersion        Int       @default(0)
+  generatedVersion        Int       @default(0)
+  queuedJobId             String?
+  activeJobId             String?
+  generationRequestedAt   DateTime?
+  generationStartedAt     DateTime?
+  generationCompletedAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

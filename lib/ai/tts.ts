@@ -41,7 +41,8 @@ function createWavBuffer(pcmData: Buffer): Buffer {
 export async function generateStoryAudio(
   storyText: string,
   treeId: string,
-  memberId: string
+  memberId: string,
+  options: { signal?: AbortSignal } = {}
 ): Promise<string> {
   const client = getClient();
 
@@ -60,6 +61,7 @@ ${storyText}`;
     model: TTS_MODEL,
     contents: [{ parts: [{ text: prompt }] }],
     config: {
+      abortSignal: options.signal,
       responseModalities: ["AUDIO"],
       speechConfig: {
         voiceConfig: {
