@@ -114,7 +114,7 @@ export async function GET(
       }
 
       const chunkSize = end - start + 1;
-      const chunk = fileBuffer.subarray(start, end + 1);
+      const chunk = new Uint8Array(fileBuffer.buffer, fileBuffer.byteOffset + start, end - start + 1);
 
       return new NextResponse(chunk, {
         status: 206, // Partial Content
@@ -128,7 +128,7 @@ export async function GET(
       });
     }
 
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(new Uint8Array(fileBuffer.buffer, fileBuffer.byteOffset, fileBuffer.byteLength), {
       headers: {
         "Content-Type": mimeType,
         "Content-Length": String(totalSize),
