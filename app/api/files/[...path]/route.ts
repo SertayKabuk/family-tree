@@ -116,7 +116,7 @@ export async function GET(
       const chunkSize = end - start + 1;
       const chunk = new Uint8Array(fileBuffer.buffer, fileBuffer.byteOffset + start, end - start + 1);
 
-      return new NextResponse(chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength) as BodyInit, {
+      return new NextResponse((chunk.buffer as ArrayBuffer).slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength), {
         status: 206, // Partial Content
         headers: {
           "Content-Type": mimeType,
@@ -128,7 +128,7 @@ export async function GET(
       });
     }
 
-    return new NextResponse(fileBuffer.buffer.slice(fileBuffer.byteOffset, fileBuffer.byteOffset + fileBuffer.byteLength) as BodyInit, {
+    return new NextResponse((fileBuffer.buffer as ArrayBuffer).slice(fileBuffer.byteOffset, fileBuffer.byteOffset + fileBuffer.byteLength), {
       headers: {
         "Content-Type": mimeType,
         "Content-Length": String(totalSize),
