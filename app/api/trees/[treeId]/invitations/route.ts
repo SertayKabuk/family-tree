@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/permissions";
 import { createInvitation, getTreeInvitations, revokeInvitation } from "@/lib/invitations";
 import { z } from "zod";
 import { MemberRole } from "@prisma/client";
+import { getLocale } from "next-intl/server";
 
 const createInvitationSchema = z.object({
   role: z.enum(MemberRole).optional().default("VIEWER"),
@@ -42,6 +43,7 @@ export async function POST(
   { params }: { params: Promise<{ treeId: string }> }
 ) {
   try {
+    const localePromise = getLocale();
     const { treeId } = await params;
     await requirePermission(treeId, "invite");
 
@@ -56,8 +58,9 @@ export async function POST(
     }
 
     const { role, email, expiresInDays } = parsed.data;
+    const locale = await localePromise;
 
-    const invitation = await createInvitation(treeId, role, email, expiresInDays);
+    const invitation = await createInvitation(treeId, role, email, expiresInDays, locale);
 
     return NextResponse.json(invitation, { status: 201 });
   } catch (error) {

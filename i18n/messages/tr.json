@@ -322,6 +322,11 @@
     "errors": {
       "createFailed": "Davet linki oluşturulamadı",
       "deleteFailed": "Davet silinemedi"
+    },
+    "invitationText": {
+      "whatsapp": "\"{treeName}\" soy ağacına davet edildiniz.\nRol: {role}\nBuradan katılın: {inviteUrl}\nSon geçerlilik tarihi: {expiresAt}",
+      "emailSubject": "\"{treeName}\" soy ağacına davet",
+      "emailBody": "\"{treeName}\" soy ağacını görüntülemek ve katkıda bulunmak için davet edildiniz.\n\nİzin seviyesi: {role}\nBuradan katılın: {inviteUrl}\n\nBu davetin geçerlilik tarihi: {expiresAt}."
     }
   },
   "dangerZone": {
@@ -455,6 +460,9 @@
     "invalid": {
       "title": "Geçersiz Davet",
       "description": "Bu davet artık geçerli değil.",
+      "notFound": "Bu daveti bulamadık.",
+      "expired": "Bu davetin süresi dolmuş.",
+      "used": "Bu davet zaten kullanılmış.",
       "goHome": "Ana Sayfaya Git"
     },
     "details": {
@@ -465,7 +473,11 @@
     "accept": "Daveti Kabul Et",
     "joining": "Katılınıyor...",
     "success": "Soy ağacına başarıyla katıldınız!",
-    "error": "Davet kabul edilemedi"
+    "error": "Davet kabul edilemedi",
+    "errors": {
+      "loadFailed": "Davet detayları yüklenemedi.",
+      "alreadyOwner": "Bu soy ağacının zaten sahibisiniz."
+    }
   },
   "userSettings": {
     "title": "Ayarlar",

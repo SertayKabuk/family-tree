@@ -322,6 +322,11 @@
     "errors": {
       "createFailed": "Failed to create invitation link",
       "deleteFailed": "Failed to delete invitation"
+    },
+    "invitationText": {
+      "whatsapp": "You've been invited to join the family tree \"{treeName}\".\nRole: {role}\nJoin here: {inviteUrl}\nExpires: {expiresAt}",
+      "emailSubject": "Invitation to join family tree: {treeName}",
+      "emailBody": "You've been invited to view and contribute to the family tree \"{treeName}\".\n\nPermission level: {role}\nJoin here: {inviteUrl}\n\nThis invitation expires on {expiresAt}."
     }
   },
   "dangerZone": {
@@ -455,6 +460,9 @@
     "invalid": {
       "title": "Invalid Invitation",
       "description": "This invitation is no longer valid.",
+      "notFound": "We couldn't find this invitation.",
+      "expired": "This invitation has expired.",
+      "used": "This invitation has already been used.",
       "goHome": "Go to Home"
     },
     "details": {
@@ -465,7 +473,11 @@
     "accept": "Accept Invitation",
     "joining": "Joining...",
     "success": "Successfully joined the family tree!",
-    "error": "Failed to accept invitation"
+    "error": "Failed to accept invitation",
+    "errors": {
+      "loadFailed": "Failed to load invitation details.",
+      "alreadyOwner": "You already own this family tree."
+    }
   },
   "userSettings": {
     "title": "Settings",

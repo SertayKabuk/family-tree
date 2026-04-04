@@ -27,19 +27,28 @@ export async function POST(
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, errorCode: "UNAUTHORIZED" },
+        { status: 401 }
+      );
     }
 
     const { token } = await params;
     const result = await acceptInvitation(token, session.user.id);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+      return NextResponse.json(
+        { success: false, errorCode: result.errorCode },
+        { status: 400 }
+      );
     }
 
     return NextResponse.json({ success: true, treeId: result.treeId });
   } catch (error) {
     console.error("Error accepting invitation:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, errorCode: "INTERNAL_ERROR" },
+      { status: 500 }
+    );
   }
 }

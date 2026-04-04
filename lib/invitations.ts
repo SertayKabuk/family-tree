@@ -1,8 +1,25 @@
 import { prisma } from "@/lib/prisma";
 import { MemberRole } from "@prisma/client";
 import { env } from "@/lib/env";
+import { getTranslations } from "next-intl/server";
+import { defaultLocale, locales, type Locale } from "@/i18n/config";
 
 const APP_URL = env.NEXT_PUBLIC_APP_URL;
+
+function resolveLocale(locale?: string): Locale {
+  return locale && locales.includes(locale as Locale)
+    ? (locale as Locale)
+    : defaultLocale;
+}
+
+export type InvitationValidationErrorCode =
+  | "INVITATION_NOT_FOUND"
+  | "INVITATION_EXPIRED"
+  | "INVITATION_USED";
+
+export type InvitationAcceptErrorCode =
+  | InvitationValidationErrorCode
+  | "ALREADY_TREE_OWNER";
 
 export interface InvitationDetails {
   id: string;
@@ -21,7 +38,8 @@ export async function createInvitation(
   treeId: string,
   role: MemberRole = "VIEWER",
   email?: string,
-  expiresInDays: number = 7
+  expiresInDays: number = 7,
+  locale?: string
 ): Promise<InvitationDetails> {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + expiresInDays);
@@ -42,8 +60,24 @@ export async function createInvitation(
 
   const inviteUrl = `${APP_URL}/invite/${invitation.token}`;
   const treeName = invitation.tree.name;
+  const resolvedLocale = resolveLocale(locale);
+  const [tSharing, tRoles] = await Promise.all([
+    getTranslations({ locale: resolvedLocale, namespace: "sharing.invitationText" }),
+    getTranslations({ locale: resolvedLocale, namespace: "roles" }),
+  ]);
+  const roleLabels: Record<MemberRole, string> = {
+    OWNER: tRoles("owner"),
+    EDITOR: tRoles("editor"),
+    VIEWER: tRoles("viewer"),
+  };
+  const formattedExpiresAt = new Intl.DateTimeFormat(resolvedLocale).format(expiresAt);
 
-  const message = `You've been invited to join the family tree "${treeName}"! Click here to join: ${inviteUrl}`;
+  const message = tSharing("whatsapp", {
+    treeName,
+    role: roleLabels[role],
+    inviteUrl,
+    expiresAt: formattedExpiresAt,
+  });
 
   return {
     id: invitation.id,
@@ -54,8 +88,13 @@ export async function createInvitation(
     expiresAt: invitation.expiresAt,
     inviteUrl,
     whatsappUrl: `https://wa.me/?text=${encodeURIComponent(message)}`,
-    emailSubject: `Invitation to join family tree: ${treeName}`,
-    emailBody: `You've been invited to view and contribute to the family tree "${treeName}".\n\nClick here to join: ${inviteUrl}\n\nThis invitation expires on ${expiresAt.toLocaleDateString()}.`,
+    emailSubject: tSharing("emailSubject", { treeName }),
+    emailBody: tSharing("emailBody", {
+      treeName,
+      role: roleLabels[role],
+      inviteUrl,
+      expiresAt: formattedExpiresAt,
+    }),
   };
 }
 
@@ -70,7 +109,7 @@ export async function validateInvitation(token: string): Promise<{
     isExpired: boolean;
     isUsed: boolean;
   };
-  error?: string;
+  errorCode?: InvitationValidationErrorCode;
 }> {
   const invitation = await prisma.treeInvitation.findUnique({
     where: { token },
@@ -82,7 +121,7 @@ export async function validateInvitation(token: string): Promise<{
   });
 
   if (!invitation) {
-    return { valid: false, error: "Invitation not found" };
+    return { valid: false, errorCode: "INVITATION_NOT_FOUND" };
   }
 
   const isExpired = invitation.expiresAt < new Date();
@@ -100,7 +139,7 @@ export async function validateInvitation(token: string): Promise<{
         isExpired: true,
         isUsed: false,
       },
-      error: "Invitation has expired",
+      errorCode: "INVITATION_EXPIRED",
     };
   }
 
@@ -116,7 +155,7 @@ export async function validateInvitation(token: string): Promise<{
         isExpired: false,
         isUsed: true,
       },
-      error: "Invitation has already been used",
+      errorCode: "INVITATION_USED",
     };
   }
 
@@ -137,11 +176,14 @@ export async function validateInvitation(token: string): Promise<{
 export async function acceptInvitation(
   token: string,
   userId: string
-): Promise<{ success: boolean; treeId?: string; error?: string }> {
+): Promise<{ success: boolean; treeId?: string; errorCode?: InvitationAcceptErrorCode }> {
   const validation = await validateInvitation(token);
 
   if (!validation.valid || !validation.invitation) {
-    return { success: false, error: validation.error };
+    return {
+      success: false,
+      errorCode: validation.errorCode ?? "INVITATION_NOT_FOUND",
+    };
   }
 
   const { treeId, role } = validation.invitation;
@@ -163,7 +205,7 @@ export async function acceptInvitation(
   });
 
   if (tree?.ownerId === userId) {
-    return { success: false, error: "You already own this tree" };
+    return { success: false, errorCode: "ALREADY_TREE_OWNER" };
   }
 
   if (existingMembership) {

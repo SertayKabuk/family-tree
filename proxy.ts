@@ -10,6 +10,7 @@ export default auth((req) => {
     pathname === "/" ||
     pathname === "/login" ||
     pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/invitations/") ||
     pathname.startsWith("/invite/");
 
   // Static files and Next.js internals

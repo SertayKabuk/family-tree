@@ -7,8 +7,18 @@ import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Toaster } from "@/components/ui/sonner";
 import { TreePine, Loader2, CheckCircle, XCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
+
+type InvitationErrorCode =
+  | "INVITATION_NOT_FOUND"
+  | "INVITATION_EXPIRED"
+  | "INVITATION_USED"
+  | "ALREADY_TREE_OWNER"
+  | "UNAUTHORIZED"
+  | "LOAD_FAILED"
+  | "INTERNAL_ERROR";
 
 interface InvitationData {
   valid: boolean;
@@ -21,7 +31,7 @@ interface InvitationData {
     isExpired: boolean;
     isUsed: boolean;
   };
-  error?: string;
+  errorCode?: InvitationErrorCode;
 }
 
 export default function InvitePage() {
@@ -29,21 +39,63 @@ export default function InvitePage() {
   const params = useParams();
   const token = params.token as string;
   const { data: session, status } = useSession();
-  const t = useTranslations("invite");
+  const tInvite = useTranslations("invite");
+  const tAuth = useTranslations("auth");
+  const tRoles = useTranslations("roles");
   const locale = useLocale();
 
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
   const [invitation, setInvitation] = useState<InvitationData | null>(null);
 
+  const getInvalidMessage = (errorCode?: InvitationErrorCode) => {
+    switch (errorCode) {
+      case "INVITATION_NOT_FOUND":
+        return tInvite("invalid.notFound");
+      case "INVITATION_EXPIRED":
+        return tInvite("invalid.expired");
+      case "INVITATION_USED":
+        return tInvite("invalid.used");
+      case "LOAD_FAILED":
+        return tInvite("errors.loadFailed");
+      default:
+        return tInvite("invalid.description");
+    }
+  };
+
+  const getAcceptErrorMessage = (errorCode?: InvitationErrorCode) => {
+    switch (errorCode) {
+      case "UNAUTHORIZED":
+        return tAuth("signInToAccept");
+      case "ALREADY_TREE_OWNER":
+        return tInvite("errors.alreadyOwner");
+      case "INVITATION_NOT_FOUND":
+      case "INVITATION_EXPIRED":
+      case "INVITATION_USED":
+        return getInvalidMessage(errorCode);
+      default:
+        return tInvite("error");
+    }
+  };
+
+  const roleLabels = {
+    OWNER: tRoles("owner"),
+    EDITOR: tRoles("editor"),
+    VIEWER: tRoles("viewer"),
+  } as const;
+
   useEffect(() => {
     async function fetchInvitation() {
       try {
         const response = await fetch(`/api/invitations/${token}`);
+        if (!response.ok) {
+          throw new Error("Failed to load invitation");
+        }
+
         const data = await response.json();
         setInvitation(data);
       } catch {
-        setInvitation({ valid: false, error: t("errors.loadFailed") });
+        setInvitation({ valid: false, errorCode: "LOAD_FAILED" });
       } finally {
         setLoading(false);
       }
@@ -52,7 +104,7 @@ export default function InvitePage() {
     if (token) {
       fetchInvitation();
     }
-  }, [token, t]);
+  }, [token]);
 
   const handleAccept = async () => {
     if (!session?.user) {
@@ -70,14 +122,14 @@ export default function InvitePage() {
 
       const data = await response.json();
 
-      if (data.success) {
-        toast.success(t("success"));
+      if (response.ok && data.success) {
+        toast.success(tInvite("success"));
         router.push(`/trees/${data.treeId}`);
       } else {
-        toast.error(data.error || t("errors.acceptFailed"));
+        toast.error(getAcceptErrorMessage(data.errorCode));
       }
     } catch {
-      toast.error(t("errors.acceptFailed"));
+      toast.error(tInvite("error"));
     } finally {
       setAccepting(false);
     }
@@ -100,10 +152,12 @@ export default function InvitePage() {
           <div className="mx-auto mb-4 p-3 rounded-full bg-primary/10 w-fit">
             <TreePine className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">{t("title")}</CardTitle>
+            <CardTitle className="text-2xl">
+              {invitation?.valid === false ? tInvite("invalid.title") : tInvite("title")}
+            </CardTitle>
           {inv && (
             <CardDescription>
-              {t("invitedTo", { name: inv.treeName })}
+                {tInvite("invitedTo", { name: inv.treeName })}
             </CardDescription>
           )}
         </CardHeader>
@@ -114,30 +168,34 @@ export default function InvitePage() {
                 <XCircle className="h-8 w-8 text-destructive" />
               </div>
               <div>
-                <p className="font-semibold">{t("invalid")}</p>
+                <p className="font-semibold">{tInvite("invalid.title")}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {invitation?.error || t("invalidDescription")}
+                  {getInvalidMessage(invitation?.errorCode)}
                 </p>
               </div>
               <Button variant="outline" onClick={() => router.push("/")}>
-                {t("goHome")}
+                {tInvite("invalid.goHome")}
               </Button>
             </div>
           ) : (
             <>
               <div className="rounded-lg bg-muted p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{t("familyTree")}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {tInvite("details.familyTree")}
+                  </span>
                   <span className="font-medium">{inv?.treeName}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{t("yourRole")}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {tInvite("details.yourRole")}
+                  </span>
                   <Badge variant="secondary">
-                    {inv?.role === "EDITOR" ? t("editor") : t("viewer")}
+                    {roleLabels[(inv?.role as keyof typeof roleLabels) ?? "VIEWER"]}
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{t("details.expires")}</span>
+                  <span className="text-sm text-muted-foreground">{tInvite("details.expires")}</span>
                   <span className="text-sm flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {new Date(inv?.expiresAt || "").toLocaleDateString(locale)}
@@ -148,7 +206,9 @@ export default function InvitePage() {
               {session?.user ? (
                 <div className="space-y-4">
                   <div className="text-center text-sm text-muted-foreground">
-                    {t("signedInAs", { email: session.user.email || "" })}
+                    {session.user.email || session.user.name
+                      ? `${tAuth("signedInAs")} ${session.user.email || session.user.name}`
+                      : tAuth("signedInAs")}
                   </div>
                   <Button
                     className="w-full"
@@ -159,12 +219,12 @@ export default function InvitePage() {
                     {accepting ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        {t("joining")}
+                        {tInvite("joining")}
                       </>
                     ) : (
                       <>
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        {t("accept")}
+                        {tInvite("accept")}
                       </>
                     )}
                   </Button>
@@ -172,7 +232,7 @@ export default function InvitePage() {
               ) : (
                 <div className="space-y-4">
                   <p className="text-center text-sm text-muted-foreground">
-                    {t("signInToAccept")}
+                    {tAuth("signInToAccept")}
                   </p>
                   <Button
                     className="w-full"
@@ -189,7 +249,7 @@ export default function InvitePage() {
                       <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                       <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                     </svg>
-                    {t("signInWithGoogle")}
+                    {tAuth("signInWithGoogle")}
                   </Button>
                 </div>
               )}
@@ -197,6 +257,7 @@ export default function InvitePage() {
           )}
         </CardContent>
       </Card>
+      <Toaster />
     </div>
   );
 }
