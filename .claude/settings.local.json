@@ -23,7 +23,10 @@
       "Bash(grep -r \"put\\(\" node_modules/@langchain/langgraph-checkpoint-postgres/dist/*.d.ts)",
       "Bash(xargs grep:*)",
       "Bash(rm:*)",
-      "Bash(npx next:*)"
+      "Bash(npx next:*)",
+      "Bash(npx prisma:*)",
+      "Bash(wc:*)",
+      "Bash(ls -la /Volumes/Depo/repos/family-tree/.env*)"
     ]
   }
 }

@@ -2,29 +2,20 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/permissions";
 import { deleteStoryAudio } from "@/lib/ai/tts";
-import { requestStoryGeneration } from "@/lib/jobs/enqueue";
+import { requestTreeStoryGeneration } from "@/lib/jobs/enqueue";
 import { getLocale } from "next-intl/server";
 
-// GET /api/trees/[treeId]/members/[memberId]/story - Get member story
+// GET /api/trees/[treeId]/story - Get tree story
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ treeId: string; memberId: string }> }
+  { params }: { params: Promise<{ treeId: string }> }
 ) {
   try {
-    const { treeId, memberId } = await params;
+    const { treeId } = await params;
     await requirePermission(treeId, "view");
 
-    const member = await prisma.familyMember.findFirst({
-      where: { id: memberId, treeId },
-      select: { id: true },
-    });
-
-    if (!member) {
-      return NextResponse.json({ error: "Member not found" }, { status: 404 });
-    }
-
-    const story = await prisma.story.findUnique({
-      where: { memberId },
+    const story = await prisma.treeStory.findUnique({
+      where: { treeId },
     });
 
     if (!story) {
@@ -41,36 +32,40 @@ export async function GET(
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }
-    console.error("Error fetching story:", error);
+    console.error("Error fetching tree story:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
-// POST /api/trees/[treeId]/members/[memberId]/story - Generate/regenerate story
+// POST /api/trees/[treeId]/story - Generate/regenerate tree story
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ treeId: string; memberId: string }> }
+  { params }: { params: Promise<{ treeId: string }> }
 ) {
   try {
-    const { treeId, memberId } = await params;
+    const { treeId } = await params;
     await requirePermission(treeId, "manage_members");
 
-    const member = await prisma.familyMember.findFirst({
-      where: { id: memberId, treeId },
-      select: { id: true },
+    const tree = await prisma.familyTree.findUnique({
+      where: { id: treeId },
+      select: { id: true, _count: { select: { familyMembers: true } } },
     });
 
-    if (!member) {
-      return NextResponse.json({ error: "Member not found" }, { status: 404 });
+    if (!tree) {
+      return NextResponse.json({ error: "Tree not found" }, { status: 404 });
+    }
+
+    if (tree._count.familyMembers === 0) {
+      return NextResponse.json({ error: "Tree has no members" }, { status: 400 });
     }
 
     const body = await request.json().catch(() => ({}));
     const { storyStyle, customPrompt } = body as { storyStyle?: string; customPrompt?: string };
     const locale = await getLocale();
 
-    await requestStoryGeneration(memberId, { immediate: true, storyStyle, customPrompt, locale });
+    await requestTreeStoryGeneration(treeId, { immediate: true, storyStyle, customPrompt, locale });
 
-    return NextResponse.json({ message: "Story generation requested", status: "PENDING" }, { status: 202 });
+    return NextResponse.json({ message: "Tree story generation requested", status: "PENDING" }, { status: 202 });
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "Unauthorized") {
@@ -80,30 +75,21 @@ export async function POST(
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }
-    console.error("Error triggering story generation:", error);
+    console.error("Error triggering tree story generation:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
-// DELETE /api/trees/[treeId]/members/[memberId]/story - Delete story
+// DELETE /api/trees/[treeId]/story - Delete tree story
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ treeId: string; memberId: string }> }
+  { params }: { params: Promise<{ treeId: string }> }
 ) {
   try {
-    const { treeId, memberId } = await params;
+    const { treeId } = await params;
     await requirePermission(treeId, "manage_members");
 
-    const member = await prisma.familyMember.findFirst({
-      where: { id: memberId, treeId },
-      select: { id: true },
-    });
-
-    if (!member) {
-      return NextResponse.json({ error: "Member not found" }, { status: 404 });
-    }
-
-    const story = await prisma.story.findUnique({ where: { memberId } });
+    const story = await prisma.treeStory.findUnique({ where: { treeId } });
     if (!story) {
       return NextResponse.json({ error: "No story found" }, { status: 404 });
     }
@@ -112,7 +98,7 @@ export async function DELETE(
       await deleteStoryAudio(story.audioPath);
     }
 
-    await prisma.story.delete({ where: { memberId } });
+    await prisma.treeStory.delete({ where: { treeId } });
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -124,7 +110,7 @@ export async function DELETE(
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }
-    console.error("Error deleting story:", error);
+    console.error("Error deleting tree story:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

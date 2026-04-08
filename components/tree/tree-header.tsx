@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bot, ChevronLeft, MoreVertical, Settings, Share2, Users } from "lucide-react";
+import { BookOpen, Bot, ChevronLeft, MoreVertical, Settings, Share2, Users } from "lucide-react";
 import { FamilyTree, User } from "@prisma/client";
 
 interface TreeHeaderProps {
@@ -74,6 +74,10 @@ export function TreeHeader({ tree, canEdit }: TreeHeaderProps) {
                   <Bot className="mr-2 h-4 w-4" />
                   {t("treeHeader.aiChat")}
                 </DropdownMenuItem>
+                <DropdownMenuItem render={<Link href={`/trees/${tree.id}/story`} />}>
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  {t("treeStory.title")}
+                </DropdownMenuItem>
                 {canEdit && (
                   <>
                     <DropdownMenuItem render={<Link href={`/trees/${tree.id}/settings`} />}>
@@ -98,6 +102,13 @@ export function TreeHeader({ tree, canEdit }: TreeHeaderProps) {
             <Button variant="outline" size="sm">
               <Bot className="mr-1 h-4 w-4" />
               {t("treeHeader.aiChat")}
+            </Button>
+          </Link>
+
+          <Link href={`/trees/${tree.id}/story`}>
+            <Button variant="outline" size="sm">
+              <BookOpen className="mr-1 h-4 w-4" />
+              {t("treeStory.title")}
             </Button>
           </Link>
 

@@ -2,6 +2,7 @@ import { getBoss } from "./boss";
 import { QUEUES } from "./queues";
 import {
   handleStoryGeneration,
+  handleTreeStoryGeneration,
   handleMediaAnalysis,
   handleMediaIndexing,
 } from "./handlers";
@@ -11,6 +12,7 @@ export async function startWorkers() {
 
   // Ensure queues exist before registering workers (pg-boss v12 requirement)
   await boss.createQueue(QUEUES.STORY_GENERATION);
+  await boss.createQueue(QUEUES.TREE_STORY_GENERATION);
   await boss.createQueue(QUEUES.MEDIA_ANALYSIS);
   await boss.createQueue(QUEUES.MEDIA_INDEXING);
 
@@ -18,6 +20,12 @@ export async function startWorkers() {
     QUEUES.STORY_GENERATION,
     { localConcurrency: 2 },
     handleStoryGeneration
+  );
+
+  await boss.work(
+    QUEUES.TREE_STORY_GENERATION,
+    { localConcurrency: 1 },
+    handleTreeStoryGeneration
   );
 
   await boss.work(

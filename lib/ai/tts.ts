@@ -4,8 +4,38 @@ import { existsSync } from "fs";
 import path from "path";
 import { nanoid } from "nanoid";
 import { env } from "@/lib/env";
+import { defaultLocale, type Locale } from "@/i18n/config";
 
 const TTS_MODEL = "gemini-2.5-flash-preview-tts";
+
+const ttsConfig: Record<Locale, { voiceName: string; prompt: (text: string) => string }> = {
+  tr: {
+    voiceName: "Sulafat",
+    prompt: (text) => `# SES PROFİLİ: Hikaye Anlatıcısı
+## "Aile Hikayesi"
+
+### YÖNETMEN NOTLARI
+Stil: Sıcak, samimi bir hikaye anlatıcısı. Dinleyiciyi içine çeken, duygusal ve doğal bir anlatım.
+Hız: Orta tempo, sakin ve akıcı. Önemli anlarda hafif duraklamalar.
+Dil: Türkçe
+
+### METİN
+${text}`,
+  },
+  en: {
+    voiceName: "Kore",
+    prompt: (text) => `# VOICE PROFILE: Story Narrator
+## "Family Story"
+
+### DIRECTOR'S NOTES
+Style: Warm and intimate storyteller. An engaging, emotional, and natural narration that draws the listener in.
+Pace: Medium tempo, calm and fluid. Slight pauses at important moments.
+Language: English
+
+### TEXT
+${text}`,
+  },
+};
 
 function getClient() {
   return new GoogleGenAI({ apiKey: env.GOOGLE_API_KEY });
@@ -38,24 +68,34 @@ function createWavBuffer(pcmData: Buffer): Buffer {
   return Buffer.concat([header, pcmData]);
 }
 
+export async function generateTreeStoryAudio(
+  storyText: string,
+  treeId: string,
+  options: { signal?: AbortSignal; locale?: Locale } = {}
+): Promise<string> {
+  return generateStoryAudioInternal(storyText, treeId, "tree-story", options);
+}
+
 export async function generateStoryAudio(
   storyText: string,
   treeId: string,
   memberId: string,
-  options: { signal?: AbortSignal } = {}
+  options: { signal?: AbortSignal; locale?: Locale } = {}
+): Promise<string> {
+  return generateStoryAudioInternal(storyText, treeId, path.join(memberId, "story"), options);
+}
+
+async function generateStoryAudioInternal(
+  storyText: string,
+  treeId: string,
+  subPath: string,
+  options: { signal?: AbortSignal; locale?: Locale } = {}
 ): Promise<string> {
   const client = getClient();
+  const locale = options.locale ?? defaultLocale;
+  const config = ttsConfig[locale] ?? ttsConfig.tr;
 
-  const prompt = `# SES PROFİLİ: Hikaye Anlatıcısı
-## "Aile Hikayesi"
-
-### YÖNETMEN NOTLARI
-Stil: Sıcak, samimi bir hikaye anlatıcısı. Dinleyiciyi içine çeken, duygusal ve doğal bir anlatım.
-Hız: Orta tempo, sakin ve akıcı. Önemli anlarda hafif duraklamalar.
-Dil: Türkçe
-
-### METİN
-${storyText}`;
+  const prompt = config.prompt(storyText);
 
   const response = await client.models.generateContent({
     model: TTS_MODEL,
@@ -66,7 +106,7 @@ ${storyText}`;
       speechConfig: {
         voiceConfig: {
           prebuiltVoiceConfig: {
-            voiceName: "Sulafat",
+            voiceName: config.voiceName,
           },
         },
       },
@@ -83,7 +123,7 @@ ${storyText}`;
 
   // Save to disk
   const uploadDir = env.UPLOAD_DIR;
-  const storyDir = path.join(uploadDir, treeId, memberId, "story");
+  const storyDir = path.join(uploadDir, treeId, subPath);
   if (!existsSync(storyDir)) {
     await mkdir(storyDir, { recursive: true });
   }
@@ -92,7 +132,7 @@ ${storyText}`;
   const fullPath = path.join(storyDir, fileName);
   await writeFile(fullPath, wavBuffer);
 
-  const relativePath = path.join(treeId, memberId, "story", fileName).replace(/\\/g, "/");
+  const relativePath = path.join(treeId, subPath, fileName).replace(/\\/g, "/");
   return relativePath;
 }
 

@@ -2,6 +2,7 @@ import type { Job } from "pg-boss";
 import { prisma } from "@/lib/prisma";
 import type {
   StoryGenerationPayload,
+  TreeStoryGenerationPayload,
   MediaAnalysisPayload,
   MediaIndexingPayload,
 } from "./queues";
@@ -9,6 +10,10 @@ import {
   clearActiveStoryRun,
   registerActiveStoryRun,
 } from "./story-run-registry";
+import {
+  clearActiveTreeStoryRun,
+  registerActiveTreeStoryRun,
+} from "./tree-story-run-registry";
 
 function startStorySupersessionWatcher(
   memberId: string,
@@ -140,6 +145,139 @@ export async function handleStoryGeneration(
     }
 
     console.log(`[job:story-generation] Finished job ${job.id} for member ${memberId}`);
+  }
+}
+
+function startTreeStorySupersessionWatcher(
+  treeId: string,
+  jobId: string,
+  targetVersion: number,
+  controller: AbortController
+) {
+  let checking = false;
+
+  const interval = setInterval(() => {
+    if (checking || controller.signal.aborted) {
+      return;
+    }
+
+    checking = true;
+
+    void prisma.treeStory.findUnique({
+      where: { treeId },
+      select: {
+        requestedVersion: true,
+        activeJobId: true,
+      },
+    }).then((story) => {
+      if (!story) {
+        controller.abort(`Tree story state removed for tree ${treeId}`);
+        return;
+      }
+
+      if (story.requestedVersion > targetVersion) {
+        controller.abort(
+          `Tree story version ${targetVersion} for tree ${treeId} was superseded by ${story.requestedVersion}`
+        );
+        return;
+      }
+
+      if (story.activeJobId !== jobId) {
+        controller.abort(
+          `Tree story job ${jobId} for tree ${treeId} is no longer active`
+        );
+      }
+    }).catch((error) => {
+      console.error(
+        `[job:tree-story-generation] Watcher failed for tree ${treeId}:`,
+        error
+      );
+    }).finally(() => {
+      checking = false;
+    });
+  }, 1000);
+
+  return () => clearInterval(interval);
+}
+
+export async function handleTreeStoryGeneration(
+  jobs: Job<TreeStoryGenerationPayload>[]
+) {
+  for (const job of jobs) {
+    const { treeId } = job.data;
+    console.log(`[job:tree-story-generation] Starting job ${job.id} for tree ${treeId}`);
+
+    const story = await prisma.treeStory.findUnique({
+      where: { treeId },
+      select: {
+        requestedVersion: true,
+        generatedVersion: true,
+      },
+    });
+
+    if (!story) {
+      console.log(`[job:tree-story-generation] No tree story state found for tree ${treeId}, skipping job ${job.id}`);
+      continue;
+    }
+
+    if (story.generatedVersion >= story.requestedVersion) {
+      await prisma.treeStory.updateMany({
+        where: {
+          treeId,
+          queuedJobId: job.id,
+        },
+        data: {
+          queuedJobId: null,
+        },
+      });
+
+      console.log(`[job:tree-story-generation] Tree story for tree ${treeId} is already fresh, skipping job ${job.id}`);
+      continue;
+    }
+
+    const targetVersion = story.requestedVersion;
+    const claimResult = await prisma.treeStory.updateMany({
+      where: {
+        treeId,
+        requestedVersion: targetVersion,
+        activeJobId: null,
+      },
+      data: {
+        activeJobId: job.id,
+        queuedJobId: null,
+        status: "GENERATING",
+        error: null,
+        generationStartedAt: new Date(),
+      },
+    });
+
+    if (claimResult.count === 0) {
+      console.log(`[job:tree-story-generation] Job ${job.id} for tree ${treeId} could not claim the current version, skipping`);
+      continue;
+    }
+
+    const controller = new AbortController();
+    registerActiveTreeStoryRun(treeId, job.id, controller);
+    const stopWatching = startTreeStorySupersessionWatcher(
+      treeId,
+      job.id,
+      targetVersion,
+      controller
+    );
+
+    try {
+      const { generateAndSaveTreeStory } = await import("@/lib/ai/tree-story");
+      await generateAndSaveTreeStory(treeId, {
+        signal: controller.signal,
+        jobId: job.id,
+        targetVersion,
+      });
+    } finally {
+      stopWatching();
+      clearActiveTreeStoryRun(treeId, job.id);
+    }
+
+    console.log(`[job:tree-story-generation] Finished job ${job.id} for tree ${treeId}`);
   }
 }
 

@@ -5,6 +5,9 @@ import { HumanMessage } from "@langchain/core/messages";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
 import { generateStoryAudio, deleteStoryAudio } from "./tts";
+import { buildMemberStoryPrompt, type StoryStyle, DEFAULT_STORY_STYLE } from "@/lib/story-styles";
+import { defaultLocale, type Locale } from "@/i18n/config";
+import { contextLabels, getDateLocaleTag } from "@/lib/ai/context-labels";
 
 function buildMemberContext(member: {
   firstName: string;
@@ -29,24 +32,26 @@ function buildMemberContext(member: {
     type: string;
     fromMember: { firstName: string; lastName: string | null };
   }[];
-}): string {
+}, locale: Locale = defaultLocale): string {
+  const l = contextLabels[locale] ?? contextLabels.tr;
+  const dateTag = getDateLocaleTag(locale);
   const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ");
   const lines: string[] = [];
 
-  lines.push(`Ad: ${fullName}`);
-  if (member.nickname) lines.push(`Lakap: "${member.nickname}"`);
-  lines.push(`Cinsiyet: ${member.gender}`);
+  lines.push(`${l.name}: ${fullName}`);
+  if (member.nickname) lines.push(`${l.nickname}: "${member.nickname}"`);
+  lines.push(`${l.gender}: ${member.gender}`);
 
   if (member.birthDate) {
-    const bd = member.birthDate.toLocaleDateString("tr-TR", { year: "numeric", month: "long", day: "numeric" });
-    lines.push(`Doğum Tarihi: ${bd}${member.birthPlace ? `, ${member.birthPlace}` : ""}`);
+    const bd = member.birthDate.toLocaleDateString(dateTag, { year: "numeric", month: "long", day: "numeric" });
+    lines.push(`${l.birthDate}: ${bd}${member.birthPlace ? `, ${member.birthPlace}` : ""}`);
   }
   if (member.deathDate) {
-    const dd = member.deathDate.toLocaleDateString("tr-TR", { year: "numeric", month: "long", day: "numeric" });
-    lines.push(`Vefat Tarihi: ${dd}${member.deathPlace ? `, ${member.deathPlace}` : ""}`);
+    const dd = member.deathDate.toLocaleDateString(dateTag, { year: "numeric", month: "long", day: "numeric" });
+    lines.push(`${l.deathDate}: ${dd}${member.deathPlace ? `, ${member.deathPlace}` : ""}`);
   }
-  if (member.occupation) lines.push(`Meslek: ${member.occupation}`);
-  if (member.bio) lines.push(`\nBiyografi:\n${member.bio}`);
+  if (member.occupation) lines.push(`${l.occupation}: ${member.occupation}`);
+  if (member.bio) lines.push(`\n${l.biography}:\n${member.bio}`);
 
   const relLines: string[] = [];
   for (const r of member.relationshipsFrom) {
@@ -55,30 +60,30 @@ function buildMemberContext(member: {
   }
   for (const r of member.relationshipsTo) {
     const name = [r.fromMember.firstName, r.fromMember.lastName].filter(Boolean).join(" ");
-    relLines.push(`- ${r.type} (karşılık): ${name}`);
+    relLines.push(`- ${r.type} (${l.reverse}): ${name}`);
   }
   if (relLines.length > 0) {
-    lines.push(`\nİlişkiler:\n${relLines.join("\n")}`);
+    lines.push(`\n${l.relationships}:\n${relLines.join("\n")}`);
   }
 
   if (member.facts.length > 0) {
     const factLines = member.facts.map((f) => {
       let line = `- ${f.title}: ${f.content}`;
-      if (f.date) line += ` (${f.date.toLocaleDateString("tr-TR")})`;
-      if (f.source) line += ` [Kaynak: ${f.source}]`;
+      if (f.date) line += ` (${f.date.toLocaleDateString(dateTag)})`;
+      if (f.source) line += ` [${l.source}: ${f.source}]`;
       return line;
     });
-    lines.push(`\nBilgiler ve Hikayeler:\n${factLines.join("\n")}`);
+    lines.push(`\n${l.factsAndStories}:\n${factLines.join("\n")}`);
   }
 
   if (member.photos.length > 0) {
     const photoLines = member.photos
       .map((p) => {
         const desc = p.aiDescription || p.description;
-        return `- ${p.title || "Fotoğraf"}${desc ? `: ${desc}` : ""}`;
+        return `- ${p.title || l.photo}${desc ? `: ${desc}` : ""}`;
       })
       .join("\n");
-    lines.push(`\nFotoğraflar (${member.photos.length} adet):\n${photoLines}`);
+    lines.push(`\n${l.photos} (${member.photos.length}):\n${photoLines}`);
   }
   if (member.documents.length > 0) {
     const docLines = member.documents
@@ -87,7 +92,7 @@ function buildMemberContext(member: {
         return `- ${d.title}${desc ? `: ${desc}` : ""}`;
       })
       .join("\n");
-    lines.push(`\nBelgeler (${member.documents.length} adet):\n${docLines}`);
+    lines.push(`\n${l.documents} (${member.documents.length}):\n${docLines}`);
   }
   if (member.audioClips.length > 0) {
     const audioLines = member.audioClips
@@ -96,7 +101,7 @@ function buildMemberContext(member: {
         return `- ${a.title}${desc ? `: ${desc}` : ""}`;
       })
       .join("\n");
-    lines.push(`\nSes Kayıtları (${member.audioClips.length} adet):\n${audioLines}`);
+    lines.push(`\n${l.audioClips} (${member.audioClips.length}):\n${audioLines}`);
   }
 
   return lines.join("\n");
@@ -217,7 +222,17 @@ export async function generateMemberStory(
 
   if (!member) throw new Error("Member not found");
 
-  const context = buildMemberContext(member);
+  const storyRecord = await prisma.story.findUnique({
+    where: { memberId },
+    select: { storyStyle: true, customPrompt: true, locale: true },
+  });
+
+  const style = (storyRecord?.storyStyle as StoryStyle) || DEFAULT_STORY_STYLE;
+  const locale = (storyRecord?.locale as Locale) || defaultLocale;
+  const customPrompt = storyRecord?.customPrompt;
+
+  const context = buildMemberContext(member, locale);
+  const prompt = buildMemberStoryPrompt({ locale, style, customPrompt }, context);
 
   const model = new ChatGoogle({
     model: env.GOOGLE_LLM_MODEL,
@@ -231,21 +246,7 @@ export async function generateMemberStory(
   });
 
   const result = await agent.invoke({
-    messages: [
-      new HumanMessage(`Sen bir aile tarihçisisin. Aşağıdaki aile üyesi hakkında iki farklı metin yaz:
-
-1. formalStory: Resmi ve yapılandırılmış bir biyografi. Tarihler, yerler ve başarılar belirgin şekilde yer almalı. Ansiklopedik ama sıcak bir üslup kullan. 350-450 kelime.
-
-2. narrativeStory: Sözlü anlatım tarzında, sesli okunmak üzere tasarlanmış bir hikaye. Akıcı, duygusal ve doğal olmalı. Yazılı formatlamadan kaçın (madde işareti, başlık vb. yok). 250-350 kelime.
-
-Her iki metin de:
-- Türkçe olmalı
-- Yalnızca verilen bilgilere dayanmalı, spekülatif bilgi eklenmemeli
-- Tüm mevcut bilgileri (biyografi, ilişkiler, olaylar, fotoğraf açıklamaları, belgeler) doğal şekilde içermeli
-
-Aile Üyesi Bilgileri:
-${context}`),
-    ],
+    messages: [new HumanMessage(prompt)],
   }, {
     signal: options.signal,
   });
@@ -268,6 +269,7 @@ export async function generateAndSaveStory(
       audioPath: true,
       requestedVersion: true,
       generatedVersion: true,
+      locale: true,
     },
   });
 
@@ -297,6 +299,7 @@ export async function generateAndSaveStory(
     try {
       audioPath = await generateStoryAudio(narrativeStory, member.treeId, memberId, {
         signal: options.signal,
+        locale: (existing.locale as Locale) || defaultLocale,
       });
     } catch (ttsError) {
       if (isAbortError(ttsError)) {

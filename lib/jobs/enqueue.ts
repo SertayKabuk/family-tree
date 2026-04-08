@@ -1,9 +1,12 @@
 import { getBoss } from "./boss";
 import { prisma } from "@/lib/prisma";
 import { abortActiveStoryRun } from "./story-run-registry";
+import { abortActiveTreeStoryRun } from "./tree-story-run-registry";
 import {
   QUEUES,
   type StoryGenerationPayload,
+  type TreeStoryGenerationPayload,
+  type StoryStyleOptions,
   type MediaAnalysisPayload,
   type MediaIndexingPayload,
 } from "./queues";
@@ -19,9 +22,9 @@ function getStoryGenerationJobOptions(memberId: string) {
   };
 }
 
-async function scheduleStoryGenerationJob(memberId: string, immediate: boolean) {
+async function scheduleStoryGenerationJob(memberId: string, immediate: boolean, styleOptions?: StoryStyleOptions) {
   const boss = await getBoss();
-  const payload = { memberId } satisfies StoryGenerationPayload;
+  const payload = { memberId, ...styleOptions } satisfies StoryGenerationPayload;
   const options = getStoryGenerationJobOptions(memberId);
 
   const jobId = immediate
@@ -38,14 +41,24 @@ async function scheduleStoryGenerationJob(memberId: string, immediate: boolean) 
 
 export async function requestStoryGeneration(
   memberId: string,
-  options: { immediate?: boolean } = {}
+  options: { immediate?: boolean } & StoryStyleOptions = {}
 ) {
   const immediate = options.immediate ?? false;
+  const styleOptions: StoryStyleOptions = {
+    storyStyle: options.storyStyle,
+    customPrompt: options.customPrompt,
+    locale: options.locale,
+  };
   const requestedAt = new Date();
   const boss = await getBoss();
   const existingStory = await prisma.story.findUnique({
     where: { memberId },
   }) as { queuedJobId: string | null; activeJobId: string | null } | null;
+
+  const styleUpdate = {
+    ...(styleOptions.storyStyle ? { storyStyle: styleOptions.storyStyle, customPrompt: styleOptions.customPrompt ?? null } : {}),
+    ...(styleOptions.locale ? { locale: styleOptions.locale } : {}),
+  };
 
   const story = await prisma.story.upsert({
     where: { memberId },
@@ -56,6 +69,7 @@ export async function requestStoryGeneration(
       error: null,
       requestedVersion: 1,
       generationRequestedAt: requestedAt,
+      ...styleUpdate,
     },
     update: {
       requestedVersion: { increment: 1 },
@@ -64,6 +78,7 @@ export async function requestStoryGeneration(
       activeJobId: null,
       queuedJobId: null,
       generationRequestedAt: requestedAt,
+      ...styleUpdate,
     },
   }) as unknown as { requestedVersion: number };
 
@@ -80,7 +95,7 @@ export async function requestStoryGeneration(
     abortActiveStoryRun(memberId, `Story generation superseded for member ${memberId}`);
   }
 
-  const jobId = await scheduleStoryGenerationJob(memberId, immediate);
+  const jobId = await scheduleStoryGenerationJob(memberId, immediate, styleOptions);
 
   if (!jobId) {
     console.warn(
@@ -120,6 +135,126 @@ export async function requestStoryGeneration(
 
 export async function enqueueStoryGeneration(memberId: string) {
   return requestStoryGeneration(memberId, { immediate: true });
+}
+
+export async function requestTreeStoryGeneration(
+  treeId: string,
+  options: { immediate?: boolean } & StoryStyleOptions = {}
+) {
+  const immediate = options.immediate ?? false;
+  const styleOptions: StoryStyleOptions = {
+    storyStyle: options.storyStyle,
+    customPrompt: options.customPrompt,
+    locale: options.locale,
+  };
+  const requestedAt = new Date();
+  const boss = await getBoss();
+  const existingStory = await prisma.treeStory.findUnique({
+    where: { treeId },
+  }) as { queuedJobId: string | null; activeJobId: string | null } | null;
+
+  const styleUpdate = {
+    ...(styleOptions.storyStyle ? { storyStyle: styleOptions.storyStyle, customPrompt: styleOptions.customPrompt ?? null } : {}),
+    ...(styleOptions.locale ? { locale: styleOptions.locale } : {}),
+  };
+
+  const story = await prisma.treeStory.upsert({
+    where: { treeId },
+    create: {
+      treeId,
+      content: "",
+      status: "PENDING",
+      error: null,
+      requestedVersion: 1,
+      generationRequestedAt: requestedAt,
+      ...styleUpdate,
+    },
+    update: {
+      requestedVersion: { increment: 1 },
+      status: "PENDING",
+      error: null,
+      activeJobId: null,
+      queuedJobId: null,
+      generationRequestedAt: requestedAt,
+      ...styleUpdate,
+    },
+  }) as unknown as { requestedVersion: number };
+
+  const idsToCancel = [...new Set([
+    existingStory?.queuedJobId,
+    existingStory?.activeJobId,
+  ].filter((jobId): jobId is string => Boolean(jobId)))];
+
+  await Promise.allSettled(
+    idsToCancel.map((jobId) => boss.cancel(QUEUES.TREE_STORY_GENERATION, jobId))
+  );
+
+  if (existingStory?.activeJobId) {
+    abortActiveTreeStoryRun(treeId, `Tree story generation superseded for tree ${treeId}`);
+  }
+
+  const jobId = await scheduleTreeStoryGenerationJob(treeId, immediate, styleOptions);
+
+  if (!jobId) {
+    console.warn(
+      `[request] tree-story-generation for tree ${treeId} did not create a new ${immediate ? "immediate" : "delayed"} job`
+    );
+    return { jobId: null, requestedVersion: story.requestedVersion };
+  }
+
+  const updateResult = await prisma.treeStory.updateMany({
+    where: {
+      treeId,
+      requestedVersion: story.requestedVersion,
+    },
+    data: {
+      queuedJobId: jobId,
+    },
+  });
+
+  if (updateResult.count === 0) {
+    await Promise.allSettled([
+      boss.cancel(QUEUES.TREE_STORY_GENERATION, jobId),
+    ]);
+
+    console.log(
+      `[request] tree-story-generation for tree ${treeId} was superseded before job ${jobId} could be persisted`
+    );
+
+    return { jobId: null, requestedVersion: story.requestedVersion };
+  }
+
+  console.log(
+    `[request] tree-story-generation (${immediate ? "immediate" : `after ${STORY_GENERATION_QUIET_WINDOW_SECONDS}s`}) for tree ${treeId} -> job ${jobId}`
+  );
+
+  return { jobId, requestedVersion: story.requestedVersion };
+}
+
+function getTreeStoryGenerationJobOptions(treeId: string) {
+  return {
+    singletonKey: `tree-${treeId}`,
+    retryLimit: 3,
+    retryBackoff: true,
+    expireInSeconds: 15 * 60,
+  };
+}
+
+async function scheduleTreeStoryGenerationJob(treeId: string, immediate: boolean, styleOptions?: StoryStyleOptions) {
+  const boss = await getBoss();
+  const payload = { treeId, ...styleOptions } satisfies TreeStoryGenerationPayload;
+  const options = getTreeStoryGenerationJobOptions(treeId);
+
+  const jobId = immediate
+    ? await boss.send(QUEUES.TREE_STORY_GENERATION, payload, options)
+    : await boss.sendAfter(
+        QUEUES.TREE_STORY_GENERATION,
+        payload,
+        options,
+        STORY_GENERATION_QUIET_WINDOW_SECONDS
+      );
+
+  return jobId;
 }
 
 export async function enqueueMediaAnalysis(

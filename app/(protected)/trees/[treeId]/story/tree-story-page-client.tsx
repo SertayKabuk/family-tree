@@ -3,11 +3,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { GENDER_COLORS } from "@/lib/tree-colors";
-import { Gender, StoryStatus } from "@prisma/client";
+import { StoryStatus } from "@prisma/client";
 import {
   ArrowLeft,
   BookOpen,
@@ -15,21 +13,16 @@ import {
   RefreshCw,
   AlertCircle,
   Volume2,
+  TreePine,
 } from "lucide-react";
 import { toast } from "sonner";
 import { StoryStyleSelector } from "@/components/story/story-style-selector";
 import { type StoryStyle, DEFAULT_STORY_STYLE } from "@/lib/story-styles";
 
-interface StoryPageClientProps {
+interface TreeStoryPageClientProps {
   treeId: string;
-  member: {
-    id: string;
-    firstName: string;
-    lastName: string | null;
-    nickname: string | null;
-    gender: Gender;
-    profilePicturePath: string | null;
-  };
+  treeName: string;
+  memberCount: number;
   story: {
     id: string;
     content: string;
@@ -44,12 +37,9 @@ interface StoryPageClientProps {
   canEdit: boolean;
 }
 
-export function StoryPageClient({ treeId, member, story: initialStory, canEdit }: StoryPageClientProps) {
-  const t = useTranslations("story");
+export function TreeStoryPageClient({ treeId, treeName, memberCount, story: initialStory, canEdit }: TreeStoryPageClientProps) {
+  const t = useTranslations("treeStory");
   const router = useRouter();
-  const colors = GENDER_COLORS[member.gender];
-  const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ");
-  const initials = `${member.firstName[0]}${member.lastName?.[0] || ""}`.toUpperCase();
 
   const [story, setStory] = useState(initialStory);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -61,13 +51,12 @@ export function StoryPageClient({ treeId, member, story: initialStory, canEdit }
   );
   const [customPrompt, setCustomPrompt] = useState(initialStory?.customPrompt || "");
 
-  // Poll for story status when generating
   useEffect(() => {
     if (!polling) return;
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/trees/${treeId}/members/${member.id}/story`);
+        const res = await fetch(`/api/trees/${treeId}/story`);
         if (res.ok) {
           const data = await res.json();
           setStory(data);
@@ -85,12 +74,12 @@ export function StoryPageClient({ treeId, member, story: initialStory, canEdit }
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [polling, treeId, member.id, t]);
+  }, [polling, treeId, t]);
 
   const handleGenerate = useCallback(async () => {
     setIsGenerating(true);
     try {
-      const res = await fetch(`/api/trees/${treeId}/members/${member.id}/story`, {
+      const res = await fetch(`/api/trees/${treeId}/story`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ storyStyle: selectedStyle, customPrompt: customPrompt || null }),
@@ -114,20 +103,24 @@ export function StoryPageClient({ treeId, member, story: initialStory, canEdit }
         );
         toast.info(t("generating"));
       } else {
-        toast.error(t("failed"));
+        const data = await res.json().catch(() => null);
+        if (res.status === 400 && data?.error === "Tree has no members") {
+          toast.error(t("noMembers"));
+        } else {
+          toast.error(t("failed"));
+        }
         setIsGenerating(false);
       }
     } catch {
       toast.error(t("failed"));
       setIsGenerating(false);
     }
-  }, [treeId, member.id, t, selectedStyle, customPrompt]);
+  }, [treeId, t, selectedStyle, customPrompt]);
 
   const isLoading = story?.status === "GENERATING" || story?.status === "PENDING" || isGenerating;
 
   return (
     <div className="container max-w-3xl mx-auto py-8 px-4">
-      {/* Back button */}
       <Button
         variant="ghost"
         size="sm"
@@ -138,35 +131,20 @@ export function StoryPageClient({ treeId, member, story: initialStory, canEdit }
         {t("backToTree")}
       </Button>
 
-      {/* Member header */}
       <div className="flex items-center gap-4 mb-8">
-        <Avatar
-          className="h-16 w-16 border-2"
-          style={{ borderColor: colors.border }}
-        >
-          {member.profilePicturePath ? (
-            <AvatarImage
-              src={`/api/files/${member.profilePicturePath}`}
-              alt={fullName}
-            />
-          ) : null}
-          <AvatarFallback
-            style={{ backgroundColor: colors.border, color: "white" }}
-            className="text-xl font-semibold"
-          >
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+          <TreePine className="h-8 w-8 text-primary" />
+        </div>
         <div>
-          <h1 className="text-2xl font-bold">{fullName}</h1>
+          <h1 className="text-2xl font-bold">{treeName}</h1>
           <div className="flex items-center gap-2 text-muted-foreground">
             <BookOpen className="h-4 w-4" />
             <span>{t("title")}</span>
+            <span className="text-xs">({t("memberCount", { count: memberCount })})</span>
           </div>
         </div>
       </div>
 
-      {/* Story content */}
       {!story && !isLoading && (
         <Card className="mb-6">
           <CardContent className="py-8">
@@ -183,7 +161,7 @@ export function StoryPageClient({ treeId, member, story: initialStory, canEdit }
                   onCustomPromptChange={setCustomPrompt}
                 />
                 <div className="flex justify-center">
-                  <Button onClick={handleGenerate}>
+                  <Button onClick={handleGenerate} disabled={memberCount === 0}>
                     <BookOpen className="h-4 w-4 mr-2" />
                     {t("generate")}
                   </Button>
@@ -245,7 +223,6 @@ export function StoryPageClient({ treeId, member, story: initialStory, canEdit }
             </CardContent>
           </Card>
 
-          {/* Audio player */}
           {story.audioPath && (
             <Card className="mb-6">
               <CardContent className="py-6">

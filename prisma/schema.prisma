@@ -100,6 +100,9 @@ model FamilyTree {
   // Relationships between family members
   relationships Relationship[]
 
+  // AI-generated tree story
+  treeStory TreeStory?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -349,6 +352,10 @@ model Story {
   status           StoryStatus @default(PENDING)
   error            String?
 
+  storyStyle   String  @default("classic")
+  customPrompt String? @db.Text
+  locale       String  @default("tr")
+
   requestedVersion        Int       @default(0)
   generatedVersion        Int       @default(0)
   queuedJobId             String?
@@ -361,6 +368,36 @@ model Story {
   updatedAt DateTime @updatedAt
 
   @@index([memberId])
+}
+
+model TreeStory {
+  id String @id @default(cuid())
+
+  treeId String @unique
+  tree   FamilyTree @relation(fields: [treeId], references: [id], onDelete: Cascade)
+
+  content          String  @db.Text
+  narrativeContent String? @db.Text
+  audioPath        String?
+  status           StoryStatus @default(PENDING)
+  error            String?
+
+  storyStyle   String  @default("classic")
+  customPrompt String? @db.Text
+  locale       String  @default("tr")
+
+  requestedVersion        Int       @default(0)
+  generatedVersion        Int       @default(0)
+  queuedJobId             String?
+  activeJobId             String?
+  generationRequestedAt   DateTime?
+  generationStartedAt     DateTime?
+  generationCompletedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([treeId])
 }
 
 enum StoryStatus {
