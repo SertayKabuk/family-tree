@@ -284,6 +284,7 @@
     "fitView": "Fit to View"
   },
   "settings": {
+    "title": "Settings",
     "general": {
       "title": "General",
       "description": "Basic information about your family tree"

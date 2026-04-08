@@ -284,6 +284,7 @@
     "fitView": "Ekrana Sığdır"
   },
   "settings": {
+    "title": "Ayarlar",
     "general": {
       "title": "Genel",
       "description": "Soy ağacınız hakkında temel bilgiler"
