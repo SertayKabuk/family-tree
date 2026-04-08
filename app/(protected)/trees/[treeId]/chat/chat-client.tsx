@@ -172,13 +172,17 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
       setMessages([]);
       return;
     }
+    // Don't reload messages while streaming — the send() function already
+    // manages messages state during a stream, and fetching here would
+    // overwrite the in-progress assistant message with stale server data.
+    if (isStreaming) return;
     setMessagesLoading(true);
     fetch(`/api/chat/threads/${threadId}?treeId=${treeId}`)
       .then((r) => r.json())
       .then((data: { messages: Message[] }) => setMessages(data.messages ?? []))
       .catch(() => setMessages([]))
       .finally(() => setMessagesLoading(false));
-  }, [threadId, treeId]);
+  }, [threadId, treeId, isStreaming]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -354,6 +358,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
             setMessages((prev) => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
+              if (!last) return updated;
               updated[updated.length - 1] = {
                 ...last,
                 content: last.content + event.content,
