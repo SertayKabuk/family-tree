@@ -126,7 +126,7 @@ export function StoryPageClient({ treeId, member, story: initialStory, canEdit }
   const isLoading = story?.status === "GENERATING" || story?.status === "PENDING" || isGenerating;
 
   return (
-    <div className="container max-w-3xl mx-auto py-8 px-4">
+    <div className="max-w-3xl mx-auto py-4 sm:py-8 px-3 sm:px-4 overflow-x-hidden">
       {/* Back button */}
       <Button
         variant="ghost"
@@ -139,9 +139,9 @@ export function StoryPageClient({ treeId, member, story: initialStory, canEdit }
       </Button>
 
       {/* Member header */}
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8 min-w-0">
         <Avatar
-          className="h-16 w-16 border-2"
+          className="h-12 w-12 sm:h-16 sm:w-16 border-2 shrink-0"
           style={{ borderColor: colors.border }}
         >
           {member.profilePicturePath ? (
@@ -152,15 +152,15 @@ export function StoryPageClient({ treeId, member, story: initialStory, canEdit }
           ) : null}
           <AvatarFallback
             style={{ backgroundColor: colors.border, color: "white" }}
-            className="text-xl font-semibold"
+            className="text-lg sm:text-xl font-semibold"
           >
             {initials}
           </AvatarFallback>
         </Avatar>
-        <div>
-          <h1 className="text-2xl font-bold">{fullName}</h1>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <BookOpen className="h-4 w-4" />
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold truncate">{fullName}</h1>
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <BookOpen className="h-4 w-4 shrink-0" />
             <span>{t("title")}</span>
           </div>
         </div>

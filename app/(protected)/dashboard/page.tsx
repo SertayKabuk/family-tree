@@ -42,7 +42,7 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <div className="container py-8">
+    <div className="container py-4 sm:py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">{t("dashboard.title")}</h1>

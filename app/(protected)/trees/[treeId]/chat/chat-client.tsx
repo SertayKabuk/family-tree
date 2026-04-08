@@ -131,7 +131,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
   const [isStreaming, setIsStreaming] = useState(false);
   const [isPreparingImport, setIsPreparingImport] = useState(false);
   const [activeTool, setActiveTool] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [activeImportDraftId, setActiveImportDraftId] = useState<string | null>(null);
 
@@ -201,8 +201,8 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
     setInput("");
     setActiveImportDraftId(null);
     setActiveTool(null);
-    router.replace(`/trees/${treeId}/chat?thread=${newId}`);
-  }, [treeId, router]);
+    window.history.replaceState(null, "", `/trees/${treeId}/chat?thread=${newId}`);
+  }, [treeId]);
 
   const selectThread = useCallback(
     (id: string) => {
@@ -211,9 +211,9 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
       setInput("");
       setActiveImportDraftId(null);
       setActiveTool(null);
-      router.replace(`/trees/${treeId}/chat?thread=${id}`);
+      window.history.replaceState(null, "", `/trees/${treeId}/chat?thread=${id}`);
     },
-    [treeId, router]
+    [treeId]
   );
 
   const deleteThread = useCallback(async () => {
@@ -242,7 +242,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
         setActiveTool(null);
         setActiveImportDraftId(null);
         setSelectedImage(null);
-        router.replace(`/trees/${treeId}/chat`);
+        window.history.replaceState(null, "", `/trees/${treeId}/chat`);
       }
 
       setThreadToDelete(null);
@@ -252,7 +252,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
     } finally {
       setDeletingThreadId(null);
     }
-  }, [deletingThreadId, router, t, threadId, threadToDelete, treeId]);
+  }, [deletingThreadId, t, threadId, threadToDelete, treeId]);
 
   const send = useCallback(async () => {
     const text = input.trim();
@@ -263,7 +263,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
     const currentThreadId = threadId ?? crypto.randomUUID();
     if (!threadId) {
       setThreadId(currentThreadId);
-      router.replace(`/trees/${treeId}/chat?thread=${currentThreadId}`);
+      window.history.replaceState(null, "", `/trees/${treeId}/chat?thread=${currentThreadId}`);
     }
 
     let didStartChatRequest = false;
@@ -325,7 +325,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
       const serverThreadId = res.headers.get("X-Thread-Id");
       if (serverThreadId && serverThreadId !== currentThreadId) {
         setThreadId(serverThreadId);
-        router.replace(`/trees/${treeId}/chat?thread=${serverThreadId}`);
+        window.history.replaceState(null, "", `/trees/${treeId}/chat?thread=${serverThreadId}`);
       }
 
       const reader = res.body.getReader();
@@ -409,7 +409,6 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
     loadThreads,
     messages,
     messagesLoading,
-    router,
     selectedImage,
     t,
     threadId,
@@ -434,10 +433,19 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 sm:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
         className={cn(
           "flex flex-col border-r bg-muted/30 transition-all duration-200 shrink-0 overflow-hidden",
+          "fixed inset-y-0 left-0 z-40 sm:relative sm:z-auto",
           sidebarOpen ? "w-64" : "w-0"
         )}
       >
@@ -447,6 +455,14 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 {t("threads.history")}
               </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 sm:hidden"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
 
             <div className="px-2 py-2 shrink-0">
@@ -454,7 +470,10 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
                 variant="outline"
                 size="sm"
                 className="w-full justify-start gap-2"
-                onClick={startNewThread}
+                onClick={() => {
+                  startNewThread();
+                  setSidebarOpen(false);
+                }}
               >
                 <Plus className="h-3.5 w-3.5" />
                 {t("threads.newChat")}
@@ -481,7 +500,10 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
                   >
                     <button
                       type="button"
-                      onClick={() => selectThread(thread.id)}
+                      onClick={() => {
+                        selectThread(thread.id);
+                        setSidebarOpen(false);
+                      }}
                       className="min-w-0 flex-1 rounded-md px-2 py-2 text-left text-sm"
                     >
                       <div className="flex items-start gap-2">
@@ -534,11 +556,11 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
       {/* Main chat area */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
-        <div className="border-b bg-background px-4 py-2 flex items-center gap-3 shrink-0">
+        <div className="border-b bg-background px-2 sm:px-4 py-2 flex items-center gap-1.5 sm:gap-3 shrink-0">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-8 w-8 shrink-0"
             onClick={() => setSidebarOpen((v) => !v)}
             title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
           >
@@ -550,27 +572,45 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
           </Button>
           <Button
             variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0 sm:hidden"
+            onClick={() => router.push(`/trees/${treeId}`)}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
             size="sm"
+            className="hidden sm:inline-flex"
             onClick={() => router.push(`/trees/${treeId}`)}
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             {t("back")}
           </Button>
-          <div className="flex items-center gap-2">
-            <Bot className="h-4 w-4 text-primary" />
-            <span className="font-semibold">
-              {treeName} — {t("title")}
+          <div className="flex items-center gap-2 min-w-0">
+            <Bot className="h-4 w-4 text-primary shrink-0" />
+            <span className="font-semibold truncate text-sm sm:text-base">
+              <span className="hidden sm:inline">{treeName} — </span>{t("title")}
             </span>
           </div>
-          <div className="ml-auto flex items-center gap-2">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="ml-auto flex items-center gap-1 sm:gap-2 shrink-0">
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
               <Database className="h-3 w-3" />
               <span>{t("dbCaption")}</span>
             </div>
             <Button
               variant="ghost"
+              size="icon"
+              className="h-8 w-8 sm:hidden"
+              onClick={startNewThread}
+              title={t("threads.newChat")}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
               size="sm"
-              className="h-7 gap-1.5 text-xs"
+              className="hidden sm:inline-flex h-7 gap-1.5 text-xs"
               onClick={startNewThread}
             >
               <Plus className="h-3.5 w-3.5" />
@@ -580,7 +620,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+        <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-4 sm:py-6 space-y-4">
           {messagesLoading ? (
             <div className="flex items-center justify-center h-full text-muted-foreground gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -614,28 +654,28 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
               <div
                 key={i}
                 className={cn(
-                  "flex gap-3 max-w-3xl",
+                  "flex gap-2 sm:gap-3 max-w-3xl",
                   msg.role === "user" ? "ml-auto flex-row-reverse" : "mr-auto"
                 )}
               >
                 <div
                   className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center shrink-0",
+                    "h-7 w-7 sm:h-8 sm:w-8 rounded-full flex items-center justify-center shrink-0",
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground"
                   )}
                 >
                   {msg.role === "user" ? (
-                    <User className="h-4 w-4" />
+                    <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   ) : (
-                    <Bot className="h-4 w-4" />
+                    <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   )}
                 </div>
 
                 <Card
                   className={cn(
-                    "px-4 py-3 text-sm leading-relaxed max-w-[calc(100%-3rem)]",
+                    "px-3 py-2 sm:px-4 sm:py-3 text-sm leading-relaxed max-w-[calc(100%-2.5rem)] sm:max-w-[calc(100%-3rem)] break-words",
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-card"
@@ -678,7 +718,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
         </div>
 
         {/* Input */}
-        <div className="border-t bg-background px-4 py-3 shrink-0">
+        <div className="border-t bg-background px-2 sm:px-4 py-2 sm:py-3 shrink-0">
           <div className="max-w-3xl mx-auto space-y-2">
             <input
               ref={fileInputRef}

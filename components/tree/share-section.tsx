@@ -205,9 +205,9 @@ export function ShareSection({
                 <div className="space-y-4 py-4">
                   <div className="grid gap-2">
                     <Label>{t("sharing.shareLink")}</Label>
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <Input value={inviteLink.url} readOnly />
-                      <Button variant="outline" size="icon" onClick={copyLink} className="w-full sm:w-9 sm:shrink-0">
+                    <div className="flex gap-2">
+                      <Input value={inviteLink.url} readOnly className="min-w-0" />
+                      <Button variant="outline" size="icon" onClick={copyLink} className="shrink-0">
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>

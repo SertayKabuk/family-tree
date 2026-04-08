@@ -55,9 +55,9 @@ function TreeCard({
       <Card className="h-full transition-colors hover:border-primary/50 hover:bg-muted/30 cursor-pointer">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2">
-              <TreePine className="h-5 w-5 text-primary" />
-              <CardTitle className="text-lg">{tree.name}</CardTitle>
+            <div className="flex items-center gap-2 min-w-0">
+              <TreePine className="h-5 w-5 text-primary shrink-0" />
+              <CardTitle className="text-lg truncate">{tree.name}</CardTitle>
             </div>
             {role && (
               <Badge variant={role === "OWNER" ? "default" : "secondary"}>

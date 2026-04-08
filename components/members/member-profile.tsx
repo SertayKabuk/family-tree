@@ -217,7 +217,7 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
             <div className="flex-1 text-center sm:text-left">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="min-w-0">
-                  <h1 className="text-2xl font-bold">{fullName}</h1>
+                  <h1 className="text-2xl font-bold break-words">{fullName}</h1>
                   {member.nickname && (
                     <p className="text-muted-foreground">&ldquo;{member.nickname}&rdquo;</p>
                   )}

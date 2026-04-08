@@ -26,7 +26,8 @@
       "Bash(npx next:*)",
       "Bash(npx prisma:*)",
       "Bash(wc:*)",
-      "Bash(ls -la /Volumes/Depo/repos/family-tree/.env*)"
+      "Bash(ls -la /Volumes/Depo/repos/family-tree/.env*)",
+      "Bash(grep \"sm:\\\\|md:\\\\|lg:\" /Volumes/Depo/repos/family-tree/app/\\\\\\(protected\\\\\\)/trees/[treeId]/chat/chat-client.tsx)"
     ]
   }
 }

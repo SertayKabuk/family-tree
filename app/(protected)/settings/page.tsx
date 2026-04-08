@@ -22,7 +22,7 @@ export default async function SettingsPage() {
     .toUpperCase() || user.email?.[0]?.toUpperCase() || "U";
 
   return (
-    <div className="container py-8 max-w-2xl">
+    <div className="container py-4 sm:py-8 max-w-2xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">{t("title")}</h1>
         <p className="text-muted-foreground mt-1">{t("description")}</p>

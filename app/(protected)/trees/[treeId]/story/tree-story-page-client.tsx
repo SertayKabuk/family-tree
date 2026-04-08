@@ -120,7 +120,7 @@ export function TreeStoryPageClient({ treeId, treeName, memberCount, story: init
   const isLoading = story?.status === "GENERATING" || story?.status === "PENDING" || isGenerating;
 
   return (
-    <div className="container max-w-3xl mx-auto py-8 px-4">
+    <div className="max-w-3xl mx-auto py-4 sm:py-8 px-3 sm:px-4 overflow-x-hidden">
       <Button
         variant="ghost"
         size="sm"
@@ -131,14 +131,14 @@ export function TreeStoryPageClient({ treeId, treeName, memberCount, story: init
         {t("backToTree")}
       </Button>
 
-      <div className="flex items-center gap-4 mb-8">
-        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-          <TreePine className="h-8 w-8 text-primary" />
+      <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8 min-w-0">
+        <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+          <TreePine className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
         </div>
-        <div>
-          <h1 className="text-2xl font-bold">{treeName}</h1>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <BookOpen className="h-4 w-4" />
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold truncate">{treeName}</h1>
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <BookOpen className="h-4 w-4 shrink-0" />
             <span>{t("title")}</span>
             <span className="text-xs">({t("memberCount", { count: memberCount })})</span>
           </div>

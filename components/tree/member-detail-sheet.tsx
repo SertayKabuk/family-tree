@@ -260,10 +260,10 @@ export function MemberDetailSheet({
         {/* Header with Avatar and Basic Info */}
         <div className="sticky top-0 z-10 bg-background border-b">
           <SheetHeader className="p-4 pb-4 sm:p-6 sm:pb-4">
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-2 sm:gap-4">
               <div className="relative group shrink-0">
                 <Avatar
-                  className={`h-20 w-20 border-4 ${canEdit ? "cursor-pointer" : ""}`}
+                  className={`h-16 w-16 sm:h-20 sm:w-20 border-4 ${canEdit ? "cursor-pointer" : ""}`}
                   style={{ borderColor: colors.border }}
                   onClick={() => canEdit && setProfilePhotoOpen(true)}
                 >

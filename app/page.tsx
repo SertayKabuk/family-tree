@@ -37,7 +37,7 @@ export default async function HomePage() {
       </header>
 
       {/* Hero */}
-      <section className="container py-24 text-center">
+      <section className="container py-12 sm:py-24 text-center">
         <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
           {t("home.heroTitle")}
         </h1>
@@ -52,7 +52,7 @@ export default async function HomePage() {
       </section>
 
       {/* Features */}
-      <section className="container py-16">
+      <section className="container py-8 sm:py-16">
         <h2 className="text-2xl font-bold text-center mb-12">
           {t("home.featuresTitle")}
         </h2>
