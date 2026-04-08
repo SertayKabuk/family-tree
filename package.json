@@ -11,7 +11,9 @@
     "build": "next build",
     "start": "prisma migrate deploy && next start",
     "start:prod": "prisma migrate deploy && node server.js",
-    "lint": "eslint"
+    "lint": "eslint",
+    "docker:up": "docker compose --env-file=.env.local up -d",
+    "docker:down": "docker compose --env-file=.env.local down"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
