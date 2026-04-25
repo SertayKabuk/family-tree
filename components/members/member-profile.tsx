@@ -158,13 +158,17 @@ export function MemberProfile({ member, treeId, treeName, canEdit }: MemberProfi
     ...member.relationshipsFrom.map((r) => ({
       type: r.type,
       person: r.toMember,
-      label: getRelationshipLabel(r.type, member.gender, r.toMember.gender),
+      // current member is the FROM side, so the OTHER (toMember) is on the TO
+      // side of the relationship — for directional types this is the child.
+      label: getRelationshipLabel(r.type, r.toMember.gender, { otherIsFrom: false }),
       direction: "to" as const,
     })),
     ...member.relationshipsTo.map((r) => ({
       type: r.type,
       person: r.fromMember,
-      label: getRelationshipLabel(r.type, r.fromMember.gender, member.gender),
+      // current member is the TO side, so the OTHER (fromMember) is on the
+      // FROM side — for directional types this is the parent.
+      label: getRelationshipLabel(r.type, r.fromMember.gender, { otherIsFrom: true }),
       direction: "from" as const,
     })),
   ];

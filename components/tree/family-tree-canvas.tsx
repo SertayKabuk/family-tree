@@ -633,8 +633,8 @@ function FamilyTreeCanvasInner({
         edgeTypes={edgeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}
-        nodesDraggable={canEdit}
-        nodesConnectable={canEdit}
+        nodesDraggable={false}
+        nodesConnectable={false}
         elementsSelectable={true}
         minZoom={0.1}
         maxZoom={2}
@@ -644,6 +644,7 @@ function FamilyTreeCanvasInner({
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
         <Controls
+          showInteractive={canEdit}
           className="!bg-background/95 !border-border !shadow-lg [&_button]:!bg-background [&_button]:!border-border [&_button]:!text-foreground [&_button:hover]:!bg-muted [&_button_svg]:!fill-foreground"
         />
         <MiniMap

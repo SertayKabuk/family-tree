@@ -240,12 +240,16 @@ export function MemberDetailSheet({
         ...memberDetails.relationshipsFrom.map((r) => ({
           type: r.type,
           person: r.toMember,
-          label: getRelationshipLabel(r.type, memberDetails.gender, r.toMember.gender),
+          // current member is FROM, so the OTHER (toMember) is the TO side
+          // — for directional types this is the child.
+          label: getRelationshipLabel(r.type, r.toMember.gender, { otherIsFrom: false }),
         })),
         ...memberDetails.relationshipsTo.map((r) => ({
           type: r.type,
           person: r.fromMember,
-          label: getRelationshipLabel(r.type, r.fromMember.gender, memberDetails.gender),
+          // current member is TO, so the OTHER (fromMember) is the FROM side
+          // — for directional types this is the parent.
+          label: getRelationshipLabel(r.type, r.fromMember.gender, { otherIsFrom: true }),
         })),
       ]
     : [];

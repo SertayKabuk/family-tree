@@ -64,7 +64,10 @@ function RelationshipEdgeComponent({
   });
 
   const edgeColor = data?.customColor || RELATIONSHIP_COLORS[data?.type || "PARENT_CHILD"];
-  const label = data ? getRelationshipLabel(data.type, data.fromGender, data.toGender) : "";
+  // Edge labels describe the FROM person's role toward the TO person
+  // (e.g. "Father" reads "FROM is Father of TO"), so the FROM is the
+  // "other" being labeled and otherIsFrom defaults to true.
+  const label = data ? getRelationshipLabel(data.type, data.fromGender) : "";
 
   // Determine edge style based on relationship type
   const isSpouseOrPartner = data?.type === "SPOUSE" || data?.type === "PARTNER" || data?.type === "EX_SPOUSE";

@@ -126,23 +126,30 @@ function sortGroupsByParentPosition(
 }
 
 /**
- * Check if any member in the group has parents, and return the parent center X.
+ * Check if any member in the group has parents, and return the average
+ * parent center X across all members with parents. Averaging keeps the
+ * sort key aligned with where `calculateGroupPositions` will balance the
+ * couple, which avoids order/position mismatches that cause line elbows.
  */
 function getGroupParentInfo(
   group: string[],
   childToParents: Map<string, Set<string>>,
   positions: Map<string, Position>
 ): { hasParents: boolean; centerX: number } {
+  let totalX = 0;
+  let count = 0;
   for (const memberId of group) {
     const parents = childToParents.get(memberId);
     if (parents && parents.size > 0) {
-      return {
-        hasParents: true,
-        centerX: getParentCenterX(memberId, positions, childToParents),
-      };
+      const cx = getParentCenterX(memberId, positions, childToParents);
+      if (cx !== 0) {
+        totalX += cx;
+        count++;
+      }
     }
   }
-  return { hasParents: false, centerX: 0 };
+  if (count === 0) return { hasParents: false, centerX: 0 };
+  return { hasParents: true, centerX: totalX / count };
 }
 
 /**
@@ -290,7 +297,12 @@ function calculateGroupPositions(
         groupX = parentCenterX - memberCenterInGroup;
       }
     } else {
-      // Fallback: center under first member with parents
+      // No blood-relative: balance the couple between *all* members' parents.
+      // Each member with parents has a desired groupX (places them under their
+      // own parent center). Averaging the desired values distributes the offset
+      // equally across members instead of aligning one perfectly and leaving
+      // the other with a long horizontal elbow on its parent line.
+      const desiredGroupXs: number[] = [];
       for (let mi = 0; mi < group.length; mi++) {
         const memberId = group[mi];
         const parents = childToParents.get(memberId);
@@ -299,10 +311,13 @@ function calculateGroupPositions(
           if (parentCenterX !== 0) {
             const memberCenterInGroup =
               mi * (NODE_WIDTH + HORIZONTAL_GAP / 2) + NODE_WIDTH / 2;
-            groupX = parentCenterX - memberCenterInGroup;
-            break;
+            desiredGroupXs.push(parentCenterX - memberCenterInGroup);
           }
         }
+      }
+      if (desiredGroupXs.length > 0) {
+        groupX =
+          desiredGroupXs.reduce((a, b) => a + b, 0) / desiredGroupXs.length;
       }
     }
 
