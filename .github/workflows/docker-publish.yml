@@ -43,7 +43,8 @@ jobs:
 
       - name: Normalize image name
         id: image
-        run: echo "name=$(echo \"${GITHUB_REPOSITORY}\" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+        shell: bash
+        run: printf 'name=%s\n' "${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
       # Set up BuildKit Docker container builder for native single-platform builds.
       # https://github.com/docker/setup-buildx-action
@@ -125,7 +126,8 @@ jobs:
     steps:
       - name: Normalize image name
         id: image
-        run: echo "name=$(echo \"${GITHUB_REPOSITORY}\" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+        shell: bash
+        run: printf 'name=%s\n' "${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
       # Install the cosign tool for signing published images.
       # https://github.com/sigstore/cosign-installer
