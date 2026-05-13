@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -108,13 +108,27 @@ export function AddRelationshipDialog({
     { value: "GODPARENT", labelKey: "relationships.types.godparent.label", descKey: "relationships.types.godparent.description" },
   ];
 
-  useEffect(() => {
-    if (!open) {
-      setRelationshipType("PARENT_CHILD");
-      setMarriageDate("");
-      setOtherParentId(null);
-    }
-  }, [open]);
+  const resetForm = useCallback(() => {
+    setRelationshipType("PARENT_CHILD");
+    setMarriageDate("");
+    setOtherParentId(null);
+  }, []);
+
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      if (!nextOpen) {
+        resetForm();
+        onClose();
+      }
+
+      onOpenChange(nextOpen);
+    },
+    [onClose, onOpenChange, resetForm]
+  );
+
+  const handleClose = useCallback(() => {
+    handleOpenChange(false);
+  }, [handleOpenChange]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,8 +189,7 @@ export function AddRelationshipDialog({
       }
 
       toast.success(t("relationships.success"));
-      onOpenChange(false);
-      onClose();
+      handleClose();
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("relationships.errors.failed"));
@@ -185,15 +198,10 @@ export function AddRelationshipDialog({
     }
   };
 
-  const handleClose = () => {
-    onOpenChange(false);
-    onClose();
-  };
-
   const isMarriageType = relationshipType === "SPOUSE" || relationshipType === "PARTNER" || relationshipType === "EX_SPOUSE";
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto p-4 sm:max-w-lg sm:p-6">
         <form onSubmit={handleSubmit}>
           <DialogHeader>

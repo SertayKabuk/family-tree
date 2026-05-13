@@ -126,7 +126,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
   const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
   const [threadToDelete, setThreadToDelete] = useState<ChatThread | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesLoading, setMessagesLoading] = useState(() => Boolean(initialThreadId));
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [isPreparingImport, setIsPreparingImport] = useState(false);
@@ -140,6 +140,11 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
   const abortRef = useRef<AbortController | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const fetchThreads = useCallback(async () => {
+    const response = await fetch(`/api/chat/threads?treeId=${treeId}`);
+    return (await response.json()) as ChatThread[];
+  }, [treeId]);
+
   const loadThreads = useCallback(
     async ({ showLoading = true }: { showLoading?: boolean } = {}) => {
       if (showLoading) {
@@ -147,8 +152,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
       }
 
       try {
-        const response = await fetch(`/api/chat/threads?treeId=${treeId}`);
-        const data: ChatThread[] = await response.json();
+        const data = await fetchThreads();
         setThreads(data);
       } catch {
         // Best-effort refresh only.
@@ -158,30 +162,74 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
         }
       }
     },
-    [treeId]
+    [fetchThreads]
   );
 
   // Load thread list on mount
   useEffect(() => {
-    void loadThreads();
-  }, [loadThreads]);
+    let cancelled = false;
+
+    async function loadInitialThreads() {
+      try {
+        const data = await fetchThreads();
+        if (!cancelled) {
+          setThreads(data);
+        }
+      } catch {
+        // Best-effort refresh only.
+      } finally {
+        if (!cancelled) {
+          setThreadsLoading(false);
+        }
+      }
+    }
+
+    void loadInitialThreads();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchThreads]);
 
   // Load messages when threadId changes
   useEffect(() => {
-    if (!threadId) {
-      setMessages([]);
+    if (!threadId || isStreaming) {
       return;
     }
-    // Don't reload messages while streaming — the send() function already
-    // manages messages state during a stream, and fetching here would
-    // overwrite the in-progress assistant message with stale server data.
-    if (isStreaming) return;
-    setMessagesLoading(true);
-    fetch(`/api/chat/threads/${threadId}?treeId=${treeId}`)
-      .then((r) => r.json())
-      .then((data: { messages: Message[] }) => setMessages(data.messages ?? []))
-      .catch(() => setMessages([]))
-      .finally(() => setMessagesLoading(false));
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function loadThreadMessages() {
+      try {
+        const response = await fetch(`/api/chat/threads/${threadId}?treeId=${treeId}`, {
+          signal: controller.signal,
+        });
+        const data: { messages: Message[] } = await response.json();
+        if (!cancelled) {
+          setMessages(data.messages ?? []);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+
+        if (!cancelled) {
+          setMessages([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setMessagesLoading(false);
+        }
+      }
+    }
+
+    void loadThreadMessages();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [threadId, treeId, isStreaming]);
 
   // Scroll to bottom when messages change
@@ -201,6 +249,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
     const newId = crypto.randomUUID();
     setThreadId(newId);
     setMessages([]);
+    setMessagesLoading(false);
     setSelectedImage(null);
     setInput("");
     setActiveImportDraftId(null);
@@ -211,6 +260,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
   const selectThread = useCallback(
     (id: string) => {
       setThreadId(id);
+      setMessagesLoading(true);
       setSelectedImage(null);
       setInput("");
       setActiveImportDraftId(null);
@@ -243,6 +293,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
       if (threadId === id) {
         setThreadId(null);
         setMessages([]);
+        setMessagesLoading(false);
         setActiveTool(null);
         setActiveImportDraftId(null);
         setSelectedImage(null);
@@ -266,6 +317,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
     // If no thread yet, create one now
     const currentThreadId = threadId ?? crypto.randomUUID();
     if (!threadId) {
+      setMessagesLoading(false);
       setThreadId(currentThreadId);
       window.history.replaceState(null, "", `/trees/${treeId}/chat?thread=${currentThreadId}`);
     }
@@ -300,7 +352,8 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
       }
 
       const userMessage: Message = { role: "user", content: messageText };
-      const nextMessages = [...messages, userMessage];
+      const currentMessages = threadId ? messages : [];
+      const nextMessages = [...currentMessages, userMessage];
 
       setMessages([...nextMessages, { role: "assistant", content: "" }]);
       setInput("");
@@ -433,8 +486,10 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
     }
   };
 
+  const displayedMessages = threadId ? messages : [];
   const lastIsAssistant =
-    messages.length > 0 && messages[messages.length - 1].role === "assistant";
+    displayedMessages.length > 0 &&
+    displayedMessages[displayedMessages.length - 1].role === "assistant";
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
@@ -631,7 +686,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
               <Loader2 className="h-4 w-4 animate-spin" />
               <span className="text-sm">{t("threads.loading")}</span>
             </div>
-          ) : messages.length === 0 ? (
+          ) : displayedMessages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center gap-4 text-muted-foreground">
               <Bot className="h-12 w-12 opacity-30" />
               <div>
@@ -655,7 +710,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
               </div>
             </div>
           ) : (
-            messages.map((msg, i) => (
+            displayedMessages.map((msg, i) => (
               <div
                 key={i}
                 className={cn(
@@ -694,7 +749,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
                     ) : (
                       <p className="whitespace-pre-wrap">{msg.content}</p>
                     )
-                  ) : isStreaming && i === messages.length - 1 ? (
+                  ) : isStreaming && i === displayedMessages.length - 1 ? (
                     <span className="flex items-center gap-2 text-muted-foreground">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       {t("thinking")}
@@ -703,7 +758,7 @@ export function ChatClient({ treeId, treeName, initialThreadId }: ChatClientProp
 
                   {isStreaming &&
                     activeTool &&
-                    i === messages.length - 1 &&
+                    i === displayedMessages.length - 1 &&
                     lastIsAssistant && (
                       <div className="mt-2 pt-2 border-t border-border/50">
                         <ToolIndicator

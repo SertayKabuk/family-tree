@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -27,33 +27,42 @@ interface EditFactDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+function getFactDateValue(date: Date | string | null): string {
+  if (!date) {
+    return "";
+  }
+
+  return new Date(date).toISOString().split("T")[0];
+}
+
 export function EditFactDialog({
+  fact,
+  ...props
+}: EditFactDialogProps) {
+  if (!fact) {
+    return null;
+  }
+
+  return <EditFactDialogContent key={fact.id} fact={fact} {...props} />;
+}
+
+function EditFactDialogContent({
   treeId,
   memberId,
   fact,
   open,
   onOpenChange,
-}: EditFactDialogProps) {
+}: Omit<EditFactDialogProps, "fact"> & { fact: Fact }) {
   const router = useRouter();
   const t = useTranslations();
   const tFact = useTranslations("editFact");
   const tAdd = useTranslations("addFact");
 
   const [loading, setLoading] = useState(false);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [date, setDate] = useState("");
-  const [source, setSource] = useState("");
-
-  // Populate form when fact changes
-  useEffect(() => {
-    if (fact) {
-      setTitle(fact.title);
-      setContent(fact.content);
-      setDate(fact.date ? new Date(fact.date).toISOString().split("T")[0] : "");
-      setSource(fact.source ?? "");
-    }
-  }, [fact]);
+  const [title, setTitle] = useState(() => fact.title);
+  const [content, setContent] = useState(() => fact.content);
+  const [date, setDate] = useState(() => getFactDateValue(fact.date));
+  const [source, setSource] = useState(() => fact.source ?? "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,8 +71,6 @@ export function EditFactDialog({
       toast.error(tAdd("errors.required"));
       return;
     }
-
-    if (!fact) return;
 
     setLoading(true);
     try {

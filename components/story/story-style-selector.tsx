@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { STORY_STYLES, type StoryStyle, DEFAULT_STORY_STYLE } from "@/lib/story-styles";
+import { STORY_STYLES, type StoryStyle } from "@/lib/story-styles";
 import { cn } from "@/lib/utils";
 
 interface StoryStyleSelectorProps {

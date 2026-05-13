@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import {
@@ -104,8 +104,8 @@ export function MemberDetailSheet({
   const t = useTranslations();
   const locale = useLocale();
   const { getRelationshipLabel } = useRelationshipLabels();
-  const [memberDetails, setMemberDetails] = useState<MemberWithDetails | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loadedMemberDetails, setLoadedMemberDetails] = useState<MemberWithDetails | null>(null);
+  const [resolvedMemberId, setResolvedMemberId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deletingMedia, setDeletingMedia] = useState<string | null>(null);
 
@@ -115,29 +115,72 @@ export function MemberDetailSheet({
   const [deletingFact, setDeletingFact] = useState<string | null>(null);
   const [editMemberOpen, setEditMemberOpen] = useState(false);
   const [profilePhotoOpen, setProfilePhotoOpen] = useState(false);
+  const memberDetailsRequestIdRef = useRef(0);
+  const memberId = member?.id ?? null;
+  const memberDetails = loadedMemberDetails?.id === memberId ? loadedMemberDetails : null;
+  const loading = open && memberId !== null && resolvedMemberId !== memberId;
+
+  const getMemberDetails = useCallback(
+    async (targetMemberId: string) => {
+      const response = await fetch(`/api/trees/${treeId}/members/${targetMemberId}`);
+      if (!response.ok) {
+        return null;
+      }
+
+      return (await response.json()) as MemberWithDetails;
+    },
+    [treeId]
+  );
 
   const fetchMemberDetails = useCallback(async () => {
-    if (!member?.id) return;
+    if (!memberId) return;
 
-    setLoading(true);
+    const requestId = ++memberDetailsRequestIdRef.current;
+
     try {
-      const response = await fetch(`/api/trees/${treeId}/members/${member.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setMemberDetails(data);
+      const data = await getMemberDetails(memberId);
+      if (data && requestId === memberDetailsRequestIdRef.current) {
+        setLoadedMemberDetails(data);
       }
     } catch (error) {
       console.error("Failed to fetch member details:", error);
     } finally {
-      setLoading(false);
+      if (requestId === memberDetailsRequestIdRef.current) {
+        setResolvedMemberId(memberId);
+      }
     }
-  }, [member?.id, treeId]);
+  }, [getMemberDetails, memberId]);
 
   useEffect(() => {
-    if (open && member) {
-      fetchMemberDetails();
+    if (!open || !memberId) {
+      return;
     }
-  }, [open, member, fetchMemberDetails]);
+
+    const currentMemberId = memberId;
+    const requestId = ++memberDetailsRequestIdRef.current;
+    let cancelled = false;
+
+    async function loadOpenMemberDetails() {
+      try {
+        const data = await getMemberDetails(currentMemberId);
+        if (data && !cancelled && requestId === memberDetailsRequestIdRef.current) {
+          setLoadedMemberDetails(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch member details:", error);
+      } finally {
+        if (!cancelled && requestId === memberDetailsRequestIdRef.current) {
+          setResolvedMemberId(currentMemberId);
+        }
+      }
+    }
+
+    void loadOpenMemberDetails();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getMemberDetails, memberId, open]);
 
   const handleDelete = async () => {
     if (!member) return;
