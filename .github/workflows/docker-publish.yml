@@ -191,20 +191,28 @@ jobs:
           docker buildx imagetools create "${tag_args[@]}" "${refs[@]}"
 
       - name: Inspect published image
+        shell: bash
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
         run: |
-          first_tag="$(echo "$TAGS" | head -n1)"
+          first_tag="$(printf '%s\n' "$TAGS" | sed -n '/./{p;q;}')"
           docker buildx imagetools inspect "$first_tag"
 
       - name: Resolve manifest digest
         id: manifest
+        shell: bash
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
         run: |
-          first_tag="$(echo "$TAGS" | head -n1)"
-          digest="$(docker buildx imagetools inspect "$first_tag" | sed -n 's/^Digest: //p' | head -n1)"
-          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          first_tag="$(printf '%s\n' "$TAGS" | sed -n '/./{p;q;}')"
+          digest="$(docker buildx imagetools inspect "$first_tag" | awk '/^Digest:/ {print $2; exit}')"
+
+          if [ -z "$digest" ]; then
+            echo "Failed to resolve manifest digest for $first_tag" >&2
+            exit 1
+          fi
+
+          printf 'digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
 
       # Sign the resulting Docker image digest.
       # This will only write to the public Rekor transparency log when the Docker
@@ -212,10 +220,20 @@ jobs:
       # transparency data even for private images, pass --force to cosign below.
       # https://github.com/sigstore/cosign
       - name: Sign the published Docker image
+        shell: bash
         env:
           # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
           TAGS: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.manifest.outputs.digest }}
         # This step uses the identity token to provision an ephemeral certificate
         # against the sigstore community Fulcio instance.
-        run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+        run: |
+          if [[ ! "$DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "Invalid manifest digest: '$DIGEST'" >&2
+            exit 1
+          fi
+
+          while IFS= read -r tag; do
+            [ -n "$tag" ] || continue
+            cosign sign --yes "${tag}@${DIGEST}"
+          done <<< "$TAGS"
