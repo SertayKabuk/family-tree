@@ -62,6 +62,7 @@ RUN mkdir -p "$PNPM_HOME/bin" \
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+RUN rm -f ./prisma.config.ts
 
 # Copy prisma schema and config for migrations
 COPY --from=builder /app/prisma ./prisma
