@@ -52,20 +52,17 @@ RUN apk add --no-cache wget
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Setup pnpm global bin and install prisma CLI for runtime migrations
-RUN mkdir -p "$PNPM_HOME/bin" \
- && pnpm config set global-bin-dir "$PNPM_HOME/bin" \
- && pnpm add -g prisma \
- && chown -R nextjs:nodejs "$PNPM_HOME"
-
 # Copy necessary files
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-RUN rm -f ./prisma.config.ts
+
+# Copy local Prisma CLI/runtime dependencies for production migrations
+COPY --from=deps /app/node_modules ./node_modules
 
 # Copy prisma schema and config for migrations
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 # Copy startup script
 COPY scripts/start.sh ./start.sh
