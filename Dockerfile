@@ -65,7 +65,6 @@ COPY --from=builder /app/.next/static ./.next/static
 
 # Copy prisma schema and config for migrations
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 # Copy startup script
 COPY scripts/start.sh ./start.sh
